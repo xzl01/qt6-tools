@@ -1,3 +1,9 @@
+qt6-tools (6.2.4.1-1+dde) stable; urgency=medium
+
+  * Adapt to V23.
+
+ -- Lu YaNing <luyaning@uniontech.com>  Sun, 09 Oct 2022 17:04:11 +0800
+
 qt6-tools (6.2.4-1+dde) stable; urgency=medium
 
   * ['Rebuild  against by  current gcc 11.2']
