@@ -1,0 +1,9 @@
+Document: qt6-qdoc-manual
+Title: Qt 6 qdoc
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 QDoc
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qdoc/01-qdoc-manual.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qdoc/*.html

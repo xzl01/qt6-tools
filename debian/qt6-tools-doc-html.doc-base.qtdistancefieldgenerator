@@ -1,0 +1,9 @@
+Document: qt6-distancefieldgenerator-manual
+Title: Qt 6 distancefieldgenerator
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 distance field generator
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qtdistancefieldgenerator/qtdistancefieldgenerator-index.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qtdistancefieldgenerator/*.html

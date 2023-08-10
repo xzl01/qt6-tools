@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #if CHECK_SIMTEXTH
 #include "../shared/simtexth.h"
@@ -255,7 +230,6 @@ void tst_lupdate::good_data()
         "preprocess",
         "proparsing2", // llvm8 cannot handle file name without extension
         "respfile", //@lst not supported with the new parser yet (include not properly set in the compile_command.json)
-        "tr_function_alias", //alias defined in command line not supported with the new parser yet. (and need project file)
         "cmdline_deeppath", //no project file, new parser does not support (yet) this way of launching lupdate
         "cmdline_order", // no project, new parser do not pickup on macro defined but not used. Test not needed for new parser.
         "cmdline_recurse", // recursive scan without project file not supported (yet) with the new parser
@@ -304,7 +278,7 @@ void tst_lupdate::good()
         file.close();
     }
 
-    for (const QString &ts : qAsConst(generatedtsfiles)) {
+    for (const QString &ts : std::as_const(generatedtsfiles)) {
         QString genTs = workDir + QLatin1Char('/') + ts;
         QFile::remove(genTs);
         QString beforetsfile = dir + QLatin1Char('/') + ts + QLatin1String(".before");
@@ -346,7 +320,7 @@ void tst_lupdate::good()
             return;
     }
 
-    for (const QString &ts : qAsConst(generatedtsfiles)) {
+    for (const QString &ts : std::as_const(generatedtsfiles)) {
         if (dir.endsWith("preprocess_clang_parser")) {
             doCompare(workDir + QLatin1Char('/') + ts,
                       dir + QLatin1Char('/') + ts + QLatin1String(".result"), true);

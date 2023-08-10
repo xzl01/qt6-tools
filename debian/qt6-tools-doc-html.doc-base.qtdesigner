@@ -1,0 +1,9 @@
+Document: qt6-designer-manual
+Title: Qt 6 designer
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 designer
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qtdesigner/qtdesigner-index.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qtdesigner/*.html

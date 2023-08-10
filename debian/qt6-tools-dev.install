@@ -150,6 +150,7 @@ usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerConfig.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerConfigVersion.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerConfigVersionImpl.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerDependencies.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerPlugins.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerTargets-none.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerTargets.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Designer/Qt6DesignerVersionlessTargets.cmake
@@ -234,6 +235,11 @@ usr/lib/${DEB_HOST_MULTIARCH}/metatypes/qt6designer_none_metatypes.json
 usr/lib/${DEB_HOST_MULTIARCH}/metatypes/qt6designercomponentsprivate_none_metatypes.json
 usr/lib/${DEB_HOST_MULTIARCH}/metatypes/qt6help_none_metatypes.json
 usr/lib/${DEB_HOST_MULTIARCH}/metatypes/qt6uitools_none_metatypes.json
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig/Qt6Designer.pc
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig/Qt6Help.pc
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig/Qt6Linguist.pc
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig/Qt6UiPlugin.pc
+usr/lib/${DEB_HOST_MULTIARCH}/pkgconfig/Qt6UiTools.pc
 usr/lib/${DEB_HOST_MULTIARCH}/qt6/mkspecs/modules/qt_lib_designer.pri
 usr/lib/${DEB_HOST_MULTIARCH}/qt6/mkspecs/modules/qt_lib_help.pri
 usr/lib/${DEB_HOST_MULTIARCH}/qt6/mkspecs/modules/qt_lib_linguist.pri

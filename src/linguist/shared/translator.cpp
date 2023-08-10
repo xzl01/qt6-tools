@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2020 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2020 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "translator.h"
 
@@ -105,7 +80,7 @@ void Translator::ensureIndexed() const
         m_ctxCmtIdx.clear();
         m_idMsgIdx.clear();
         m_msgIdx.clear();
-        for (int i = 0; i < m_messages.count(); i++)
+        for (int i = 0; i < m_messages.size(); i++)
             addIndex(i, m_messages.at(i));
     }
 }
@@ -124,7 +99,7 @@ void Translator::replaceSorted(const TranslatorMessage &msg)
 
 static QString elidedId(const QString &id, int len)
 {
-    return id.length() <= len ? id : id.left(len - 5) + QLatin1String("[...]");
+    return id.size() <= len ? id : id.left(len - 5) + QLatin1String("[...]");
 }
 
 static QString makeMsgId(const TranslatorMessage &msg)
@@ -180,7 +155,7 @@ void Translator::extend(const TranslatorMessage &msg, ConversionData &cd)
 void Translator::insert(int idx, const TranslatorMessage &msg)
 {
     if (m_indexOk) {
-        if (idx == m_messages.count())
+        if (idx == m_messages.size())
             addIndex(idx, msg);
         else
             m_indexOk = false;
@@ -190,7 +165,7 @@ void Translator::insert(int idx, const TranslatorMessage &msg)
 
 void Translator::append(const TranslatorMessage &msg)
 {
-    insert(m_messages.count(), msg);
+    insert(m_messages.size(), msg);
 }
 
 void Translator::appendSorted(const TranslatorMessage &msg)
@@ -212,7 +187,7 @@ void Translator::appendSorted(const TranslatorMessage &msg)
     // Working vars
     int prevLine = 0;
     int curIdx = 0;
-    for (const TranslatorMessage &mit : qAsConst(m_messages)) {
+    for (const TranslatorMessage &mit : std::as_const(m_messages)) {
         bool sameFile = mit.fileName() == msg.fileName() && mit.context() == msg.context();
         int curLine;
         if (sameFile && (curLine = mit.lineNumber()) >= prevLine) {
@@ -257,7 +232,7 @@ static QString guessFormat(const QString &filename, const QString &format)
     if (format != QLatin1String("auto"))
         return format;
 
-    for (const Translator::FileFormat &fmt : qAsConst(Translator::registeredFileFormats())) {
+    for (const Translator::FileFormat &fmt : std::as_const(Translator::registeredFileFormats())) {
         if (filename.endsWith(QLatin1Char('.') + fmt.extension, Qt::CaseInsensitive))
             return fmt.extension;
     }
@@ -294,7 +269,7 @@ bool Translator::load(const QString &filename, ConversionData &cd, const QString
 
     QString fmt = guessFormat(filename, format);
 
-    for (const FileFormat &format : qAsConst(registeredFileFormats())) {
+    for (const FileFormat &format : std::as_const(registeredFileFormats())) {
         if (fmt == format.extension) {
             if (format.loader)
                 return (*format.loader)(*this, file, cd);
@@ -335,7 +310,7 @@ bool Translator::save(const QString &filename, ConversionData &cd, const QString
     QString fmt = guessFormat(filename, format);
     cd.m_targetDir = QFileInfo(filename).absoluteDir();
 
-    for (const FileFormat &format : qAsConst(registeredFileFormats())) {
+    for (const FileFormat &format : std::as_const(registeredFileFormats())) {
         if (fmt == format.extension) {
             if (format.saver)
                 return (*format.saver)(*this, file, cd);
@@ -479,7 +454,7 @@ void Translator::stripIdenticalSourceTranslations()
 {
     for (auto it = m_messages.begin(); it != m_messages.end(); ) {
         // we need to have just one translation, and it be equal to the source
-        if (it->translations().count() == 1 && it->translation() == it->sourceText())
+        if (it->translations().size() == 1 && it->translation() == it->sourceText())
             it = m_messages.erase(it);
         else
             ++it;
@@ -516,18 +491,27 @@ void Translator::dropUiLines()
     }
 }
 
-struct TranslatorMessageIdPtr {
-    explicit TranslatorMessageIdPtr(const TranslatorMessage &tm)
+class TranslatorMessagePtrBase
+{
+public:
+    explicit TranslatorMessagePtrBase(const Translator *tor, int messageIndex)
+        : tor(tor), messageIndex(messageIndex)
     {
-        ptr = &tm;
     }
 
     inline const TranslatorMessage *operator->() const
     {
-        return ptr;
+        return &tor->message(messageIndex);
     }
 
-    const TranslatorMessage *ptr;
+    const Translator *tor;
+    const int messageIndex;
+};
+
+class TranslatorMessageIdPtr : public TranslatorMessagePtrBase
+{
+public:
+    using TranslatorMessagePtrBase::TranslatorMessagePtrBase;
 };
 
 Q_DECLARE_TYPEINFO(TranslatorMessageIdPtr, Q_RELOCATABLE_TYPE);
@@ -542,18 +526,10 @@ inline bool operator==(TranslatorMessageIdPtr tmp1, TranslatorMessageIdPtr tmp2)
     return tmp1->id() == tmp2->id();
 }
 
-struct TranslatorMessageContentPtr {
-    explicit TranslatorMessageContentPtr(const TranslatorMessage &tm)
-    {
-        ptr = &tm;
-    }
-
-    inline const TranslatorMessage *operator->() const
-    {
-        return ptr;
-    }
-
-    const TranslatorMessage *ptr;
+class TranslatorMessageContentPtr : public TranslatorMessagePtrBase
+{
+public:
+    using TranslatorMessagePtrBase::TranslatorMessagePtrBase;
 };
 
 Q_DECLARE_TYPEINFO(TranslatorMessageContentPtr, Q_RELOCATABLE_TYPE);
@@ -579,33 +555,32 @@ inline bool operator==(TranslatorMessageContentPtr tmp1, TranslatorMessageConten
 
 Translator::Duplicates Translator::resolveDuplicates()
 {
-    QList<int> duplicateIndices;
     Duplicates dups;
-    QHash<TranslatorMessageIdPtr, int> idRefs;
-    QHash<TranslatorMessageContentPtr, int> contentRefs;
-    for (int i = 0; i < m_messages.count(); ++i) {
+    QSet<TranslatorMessageIdPtr> idRefs;
+    QSet<TranslatorMessageContentPtr> contentRefs;
+    for (int i = 0; i < m_messages.size();) {
         const TranslatorMessage &msg = m_messages.at(i);
         TranslatorMessage *omsg;
         int oi;
         QSet<int> *pDup;
         if (!msg.id().isEmpty()) {
-            const auto it = idRefs.constFind(TranslatorMessageIdPtr(msg));
+            const auto it = idRefs.constFind(TranslatorMessageIdPtr(this, i));
             if (it != idRefs.constEnd()) {
-                oi = *it;
+                oi = it->messageIndex;
                 omsg = &m_messages[oi];
                 pDup = &dups.byId;
                 goto gotDupe;
             }
         }
         {
-            const auto it = contentRefs.constFind(TranslatorMessageContentPtr(msg));
+            const auto it = contentRefs.constFind(TranslatorMessageContentPtr(this, i));
             if (it != contentRefs.constEnd()) {
-                oi = *it;
+                oi = it->messageIndex;
                 omsg = &m_messages[oi];
                 if (msg.id().isEmpty() || omsg->id().isEmpty()) {
                     if (!msg.id().isEmpty() && omsg->id().isEmpty()) {
                         omsg->setId(msg.id());
-                        idRefs[TranslatorMessageIdPtr(*omsg)] = oi;
+                        idRefs.insert(TranslatorMessageIdPtr(this, oi));
                     }
                     pDup = &dups.byContents;
                     goto gotDupe;
@@ -614,21 +589,17 @@ Translator::Duplicates Translator::resolveDuplicates()
             }
         }
         if (!msg.id().isEmpty())
-            idRefs[TranslatorMessageIdPtr(msg)] = i;
-        contentRefs[TranslatorMessageContentPtr(msg)] = i;
+            idRefs.insert(TranslatorMessageIdPtr(this, i));
+        contentRefs.insert(TranslatorMessageContentPtr(this, i));
+        ++i;
         continue;
       gotDupe:
         pDup->insert(oi);
         if (!omsg->isTranslated() && msg.isTranslated())
             omsg->setTranslations(msg.translations());
         m_indexOk = false;
-        // don't remove the duplicate entries yet to not mess up the pointers that
-        // are in the hashes
-        duplicateIndices.append(i);
+        m_messages.removeAt(i);
     }
-    // now remove the duplicates from the messages
-    for (int i = duplicateIndices.size() - 1; i >= 0; --i)
-        m_messages.removeAt(duplicateIndices.at(i));
     return dups;
 }
 
@@ -683,11 +654,11 @@ QStringList Translator::normalizedTranslations(const TranslatorMessage &msg, int
 
     // make sure that the stringlist always have the size of the
     // language's current numerus, or 1 if its not plural
-    if (translations.count() > numTranslations) {
-        for (int i = translations.count(); i > numTranslations; --i)
+    if (translations.size() > numTranslations) {
+        for (int i = translations.size(); i > numTranslations; --i)
             translations.removeLast();
-    } else if (translations.count() < numTranslations) {
-        for (int i = translations.count(); i < numTranslations; ++i)
+    } else if (translations.size() < numTranslations) {
+        for (int i = translations.size(); i < numTranslations; ++i)
             translations.append(QString());
     }
     return translations;
@@ -703,16 +674,16 @@ void Translator::normalizeTranslations(ConversionData &cd)
     if (l != QLocale::C) {
         QStringList forms;
         if (getNumerusInfo(l, c, 0, &forms, 0))
-            numPlurals = forms.count(); // includes singular
+            numPlurals = forms.size(); // includes singular
     }
-    for (int i = 0; i < m_messages.count(); ++i) {
+    for (int i = 0; i < m_messages.size(); ++i) {
         const TranslatorMessage &msg = m_messages.at(i);
         QStringList tlns = msg.translations();
         int ccnt = msg.isPlural() ? numPlurals : 1;
-        if (tlns.count() != ccnt) {
-            while (tlns.count() < ccnt)
+        if (tlns.size() != ccnt) {
+            while (tlns.size() < ccnt)
                 tlns.append(QString());
-            while (tlns.count() > ccnt) {
+            while (tlns.size() > ccnt) {
                 tlns.removeLast();
                 truncated = true;
             }
@@ -729,7 +700,7 @@ void Translator::normalizeTranslations(ConversionData &cd)
 QString Translator::guessLanguageCodeFromFileName(const QString &filename)
 {
     QString str = filename;
-    for (const FileFormat &format : qAsConst(registeredFileFormats())) {
+    for (const FileFormat &format : std::as_const(registeredFileFormats())) {
         if (str.endsWith(format.extension)) {
             str = str.left(str.size() - format.extension.size() - 1);
             break;

@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdesigner_utils_p.h"
 #include "qdesigner_propertycommand_p.h"
@@ -44,6 +19,7 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qqueue.h>
 #include <QtCore/qshareddata.h>
+#include <QtCore/qstandardpaths.h>
 
 #include <QtWidgets/qapplication.h>
 #include <QtGui/qicon.h>
@@ -55,8 +31,27 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal
 {
+    // ### FIXME Qt 8: Remove (QTBUG-96005)
+    QString legacyDataDirectory()
+    {
+        return QDir::homePath() + u"/.designer"_s;
+    }
+
+    QString dataDirectory()
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(7, 0, 0)
+        return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation)
+               + u'/' + QCoreApplication::organizationName() + u"/Designer"_s;
+#else
+        return legacyDataDirectory();
+#endif
+    }
+
+
     QDESIGNER_SHARED_EXPORT void designerWarning(const QString &message)
     {
         qWarning("Designer: %s", qPrintable(message));
@@ -754,14 +749,14 @@ namespace qdesigner_internal
         Q_ASSERT(qname.isEmpty() == false);
 
 
-        if (qname.count() > 1 && qname.at(1).isUpper()) {
+        if (qname.size() > 1 && qname.at(1).isUpper()) {
             const QChar first = qname.at(0);
             if (first == QLatin1Char('Q') || first == QLatin1Char('K'))
                 qname.remove(0, 1);
         }
 
-        const int len = qname.count();
-        for (int i = 0; i < len && qname.at(i).isUpper(); i++)
+        const qsizetype len = qname.size();
+        for (qsizetype i = 0; i < len && qname.at(i).isUpper(); ++i)
             qname[i] = qname.at(i).toLower();
 
         return qname;

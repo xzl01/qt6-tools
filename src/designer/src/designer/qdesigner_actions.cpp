@@ -1,33 +1,9 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdesigner_actions.h"
 #include "designer_enums.h"
+#include <qdesigner_utils_p.h>
 #include "qdesigner.h"
 #include "qdesigner_workbench.h"
 #include "qdesigner_formwindow.h"
@@ -93,6 +69,7 @@
 #include <QtCore/qpluginloader.h>
 #include <QtCore/qdebug.h>
 #include <QtCore/qtimer.h>
+#include <QtCore/qtextstream.h>
 #include <QtCore/qmetaobject.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qsavefile.h>
@@ -102,6 +79,7 @@
 QT_BEGIN_NAMESPACE
 
 using namespace qdesigner_internal;
+using namespace Qt::StringLiterals;
 
 const char *QDesignerActions::defaultToolbarPropertyName = "__qt_defaultToolBarAction";
 
@@ -1093,7 +1071,7 @@ void QDesignerActions::backupForms()
         for (const QString &backupFile : backupFiles)
             backupDir.remove(backupFile);
 
-        for (const QString &tmpName : qAsConst(tmpFiles)) {
+        for (const QString &tmpName : std::as_const(tmpFiles)) {
             QString name(tmpName);
             name.replace(m_backupTmpPath, m_backupPath);
             QFile tmpFile(tmpName);
@@ -1186,17 +1164,8 @@ bool QDesignerActions::ensureBackupDirectories() {
 
     if (m_backupPath.isEmpty()) {
         // create names
-        m_backupPath = QDir::homePath();
-        m_backupPath += QDir::separator();
-        m_backupPath += QStringLiteral(".designer");
-        m_backupPath += QDir::separator();
-        m_backupPath += QStringLiteral("backup");
-        m_backupPath = QDir::toNativeSeparators(m_backupPath);
-
-        m_backupTmpPath = m_backupPath;
-        m_backupTmpPath += QDir::separator();
-        m_backupTmpPath += QStringLiteral("tmp");
-        m_backupTmpPath = QDir::toNativeSeparators(m_backupTmpPath);
+        m_backupPath = dataDirectory() + u"/backup"_s;
+        m_backupTmpPath = m_backupPath + u"/tmp"_s;
     }
 
     // ensure directories
@@ -1205,13 +1174,15 @@ bool QDesignerActions::ensureBackupDirectories() {
 
     if (!backupDir.exists()) {
         if (!backupDir.mkpath(m_backupPath)) {
-            qdesigner_internal::designerWarning(tr("The backup directory %1 could not be created.").arg(m_backupPath));
+            qdesigner_internal::designerWarning(tr("The backup directory %1 could not be created.")
+                                                .arg(QDir::toNativeSeparators(m_backupPath)));
             return false;
         }
     }
     if (!backupTmpDir.exists()) {
         if (!backupTmpDir.mkpath(m_backupTmpPath)) {
-            qdesigner_internal::designerWarning(tr("The temporary backup directory %1 could not be created.").arg(m_backupTmpPath));
+            qdesigner_internal::designerWarning(tr("The temporary backup directory %1 could not be created.")
+                                                .arg(QDir::toNativeSeparators(m_backupTmpPath)));
             return false;
         }
     }

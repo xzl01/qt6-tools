@@ -1,0 +1,9 @@
+Document: qt6-qthelp-manual
+Title: Qt 6 Help
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 Help
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qthelp/qthelp-index.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qthelp/*.html

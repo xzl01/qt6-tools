@@ -1,33 +1,9 @@
-﻿/****************************************************************************
-**
-** Copyright (C) 2019 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Linguist of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2019 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "cpp_clang.h"
 #include "clangtoolastreader.h"
+#include "filesignificancecheck.h"
 #include "lupdatepreprocessoraction.h"
 #include "synchronized.h"
 #include "translator.h"
@@ -38,6 +14,7 @@
 #include <QtCore/qjsonarray.h>
 #include <QtCore/qjsondocument.h>
 #include <QtCore/qjsonobject.h>
+#include <QtCore/qscopeguard.h>
 #include <QtCore/QProcess>
 #include <QStandardPaths>
 #include <QtTools/private/qttools-config_p.h>
@@ -59,6 +36,8 @@
 using clang::tooling::CompilationDatabase;
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 Q_LOGGING_CATEGORY(lcClang, "qt.lupdate.clang");
 
@@ -97,6 +76,21 @@ static QByteArrayList getMSVCIncludePathsFromEnvironment()
         it->prepend("-isystem");
     }
     return pathList;
+}
+
+static QStringList getProjectDirsFromEnvironment()
+{
+    QList<QByteArray> dirList;
+    QStringList rootdirs;
+    if (const char* includeEnv = std::getenv("LUPDATE_ROOT_DIRS")) {
+        QByteArray includeList = QByteArray::fromRawData(includeEnv, strlen(includeEnv));
+        dirList = includeList.split(';');
+
+        for (auto dir : dirList) {
+            rootdirs.append(QString::fromStdString(dir.toStdString()));
+        }
+    }
+    return rootdirs;
 }
 
 
@@ -168,50 +162,123 @@ QByteArrayList getIncludePathsFromCompiler()
     return pathList;
 }
 
-// Makes sure all the comments will be parsed and part of the AST
-// Clang will run with the flag -fparse-all-comments
-clang::tooling::ArgumentsAdjuster getClangArgumentAdjuster()
+std::vector<std::string> ClangCppParser::getAliasFunctionDefinition()
 {
-    return [](const clang::tooling::CommandLineArguments &args, llvm::StringRef /*unused*/) {
-        clang::tooling::CommandLineArguments adjustedArgs;
-        for (size_t i = 0, e = args.size(); i < e; ++i) {
-            llvm::StringRef arg = args[i];
-            // FIXME: Remove options that generate output.
-            if (!arg.startswith("-fcolor-diagnostics") && !arg.startswith("-fdiagnostics-color"))
-                adjustedArgs.push_back(args[i]);
+    QStringList aliases = trFunctionAliasManager.listAliases();
+    std::vector<std::string> results;
+    for (QString alias : aliases) {
+        std::string definition = "-D" + alias.toStdString();
+        switch (trFunctionAliasManager.trFunctionByName(alias)) {
+        case TrFunctionAliasManager::Function_QT_TR_N_NOOP:
+            definition += "(x)=QT_TR_N_NOOP(x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_trUtf8:
+        case TrFunctionAliasManager::Function_tr:
+            definition += "=tr";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TR_NOOP:
+            definition += "(x)=QT_TR_NOOP(x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TR_NOOP_UTF8:
+            definition += "(x)=QT_TR_NOOP_UTF8(x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_N_NOOP:
+            definition += "(scope,x)=QT_TRANSLATE_N_NOOP(scope,x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_N_NOOP3:
+            definition += "(scope, x, comment)=QT_TRANSLATE_N_NOOP3(scope, x, comment)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_translate:
+            definition += "=QCoreApplication::translate";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_findMessage:
+            definition += "=findMessage";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_NOOP:
+            definition += "(scope,x)=QT_TRANSLATE_NOOP(scope,x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_NOOP_UTF8:
+            definition += "(scope,x)=QT_TRANSLATE_NOOP_UTF8(scope,x)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_NOOP3:
+            definition += "(scope, x, comment)=QT_TRANSLATE_NOOP3(scope, x, comment)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRANSLATE_NOOP3_UTF8:
+            definition += "(scope, x, comment)=QT_TRANSLATE_NOOP3_UTF8(scope, x, comment)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_qtTrId:
+            definition += "=qtTrId";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_QT_TRID_N_NOOP:
+        case TrFunctionAliasManager::Function_QT_TRID_NOOP:
+            definition += "(id)=QT_TRID_NOOP(id)";
+            results.push_back(definition);
+            break;
+        case TrFunctionAliasManager::Function_Q_DECLARE_TR_FUNCTIONS:
+            definition += "(context)=Q_DECLARE_TR_FUNCTIONS(context)";
+            results.push_back(definition);
+            break;
+        default:
+            break;
         }
-        adjustedArgs.push_back("-fparse-all-comments");
-        adjustedArgs.push_back("-nostdinc");
+    }
+    return results;
+}
+
+static std::vector<std::string> aliasDefinition;
+
+static clang::tooling::ArgumentsAdjuster getClangArgumentAdjuster()
+{
+    const QByteArrayList compilerIncludeFlags = getIncludePathsFromCompiler();
+    return [=](const clang::tooling::CommandLineArguments &args, llvm::StringRef /*unused*/) {
+        clang::tooling::CommandLineArguments adjustedArgs(args);
+        clang::tooling::CommandLineArguments adjustedArgsTemp;
+
+        adjustedArgsTemp.push_back("-fparse-all-comments");
+        adjustedArgsTemp.push_back("-nostdinc");
 
         // Turn off SSE support to avoid usage of gcc builtins.
         // TODO: Look into what Qt Creator does.
         // Pointers: HeaderPathFilter::removeGccInternalIncludePaths()
         //           and gccInstallDir() in gcctoolchain.cpp
         // Also needed for Mac, No need for CLANG_RESOURCE_DIR when this is part of the argument.
-        adjustedArgs.push_back("-mno-sse");
+        adjustedArgsTemp.push_back("-mno-sse");
 
-        adjustedArgs.push_back("-fsyntax-only");
 #ifdef Q_OS_WIN
-        adjustedArgs.push_back("-fms-compatibility-version=19");
-        adjustedArgs.push_back("-DQ_COMPILER_UNIFORM_INIT");    // qtbase + clang-cl hack
+        adjustedArgsTemp.push_back("-fms-compatibility-version=19");
+        adjustedArgsTemp.push_back("-DQ_COMPILER_UNIFORM_INIT"); // qtbase + clang-cl hack
         // avoid constexpr error connected with offsetof (QTBUG-97380)
-        adjustedArgs.push_back("-D_CRT_USE_BUILTIN_OFFSETOF");
+        adjustedArgsTemp.push_back("-D_CRT_USE_BUILTIN_OFFSETOF");
 #endif
-        adjustedArgs.push_back("-Wno-everything");
-        adjustedArgs.push_back("-std=gnu++17");
+        adjustedArgsTemp.push_back("-Wno-everything");
 
-        for (QByteArray line : getIncludePathsFromCompiler()) {
-            line = line.trimmed();
-            if (line.isEmpty())
-                continue;
-            adjustedArgs.push_back(line.data());
+        for (const QByteArray &flag : compilerIncludeFlags)
+            adjustedArgsTemp.push_back(flag.data());
+
+        for (auto alias : aliasDefinition) {
+            adjustedArgsTemp.push_back(alias);
         }
 
+        clang::tooling::CommandLineArguments::iterator it = llvm::find(adjustedArgs, "--");
+        adjustedArgs.insert(it, adjustedArgsTemp.begin(), adjustedArgsTemp.end());
         return adjustedArgs;
     };
 }
 
-bool ClangCppParser::containsTranslationInformation(llvm::StringRef ba)
+bool ClangCppParser::stringContainsTranslationInformation(llvm::StringRef ba)
 {
     // pre-process the files by a simple text search if there is any occurrence
     // of things we are interested in
@@ -248,6 +315,12 @@ bool ClangCppParser::containsTranslationInformation(llvm::StringRef ba)
          || ba.contains(trUtf8) || ba.contains(translate))
         return true;
 
+     for (QString alias : trFunctionAliasManager.listAliases()) {
+         if (ba.contains(qPrintable(alias)))
+             return true;
+     }
+
+
      return false;
 }
 
@@ -261,6 +334,7 @@ static bool generateCompilationDatabase(const QString &outputFilePath, const Con
     obj[QLatin1String("directory")] = buildDir;
     QJsonArray args = {
             QLatin1String("clang++"),
+            QLatin1String("-std=gnu++17"),
     #ifndef Q_OS_WIN
             QLatin1String("-fPIC"),
     #endif
@@ -315,33 +389,35 @@ static void sortMessagesByFileOrder(ClangCppParser::TranslatorMessageVector &mes
               });
 }
 
+bool ClangCppParser::hasAliases()
+{
+    QStringList listAlias = trFunctionAliasManager.listAliases();
+    if (listAlias.size() > 0)
+        return true;
+    return false;
+}
+
 void ClangCppParser::loadCPP(Translator &translator, const QStringList &files, ConversionData &cd,
                             bool *fail)
 {
+    FileSignificanceCheck::create();
+    auto cleanup = qScopeGuard(FileSignificanceCheck::destroy);
+    FileSignificanceCheck::the()->setExclusionPatterns(cd.m_excludes);
+    if (cd.m_rootDirs.size() > 0)
+        FileSignificanceCheck::the()->setRootDirectories(cd.m_rootDirs);
+    else
+        FileSignificanceCheck::the()->setRootDirectories(getProjectDirsFromEnvironment());
+
+    if (hasAliases())
+        aliasDefinition = getAliasFunctionDefinition();
 
     // pre-process the files by a simple text search if there is any occurrence
     // of things we are interested in
     qCDebug(lcClang) << "Load CPP \n";
-    std::vector<std::string> sourcesAst, sourcesPP;
+    std::vector<std::string> sources;
     for (const QString &filename : files) {
-        QFile file(filename);
         qCDebug(lcClang) << "File: " << filename << " \n";
-        if (file.open(QIODevice::ReadOnly)) {
-            if (const uchar *memory = file.map(0, file.size())) {
-                const auto ba = llvm::StringRef((const char*) (memory), file.size());
-                if (containsTranslationInformation(ba)) {
-                    sourcesPP.emplace_back(filename.toStdString());
-                    sourcesAst.emplace_back(sourcesPP.back());
-                }
-            } else {
-                QByteArray mem = file.readAll();
-                const auto ba = llvm::StringRef((const char*) (mem), file.size());
-                if (containsTranslationInformation(ba)) {
-                    sourcesPP.emplace_back(filename.toStdString());
-                    sourcesAst.emplace_back(sourcesPP.back());
-                }
-            }
-        }
+        sources.emplace_back(filename.toStdString());
     }
 
     std::string errorMessage;
@@ -362,7 +438,7 @@ void ClangCppParser::loadCPP(Translator &translator, const QStringList &files, C
         qCDebug(lcClang) << "Generating compilation database" << dbFilePath;
         if (!generateCompilationDatabase(dbFilePath, cd)) {
             *fail = true;
-            cd.appendError(u"Cannot generate compilation database."_qs);
+            cd.appendError(u"Cannot generate compilation database."_s);
             return;
         }
         errorMessage.clear();
@@ -379,16 +455,21 @@ void ClangCppParser::loadCPP(Translator &translator, const QStringList &files, C
     Stores stores(ast, qdecl, qnoop);
 
     std::vector<std::thread> producers;
-    ReadSynchronizedRef<std::string> ppSources(sourcesPP);
+    ReadSynchronizedRef<std::string> ppSources(sources);
     WriteSynchronizedRef<TranslationRelatedStore> ppStore(stores.Preprocessor);
     size_t idealProducerCount = std::min(ppSources.size(), size_t(std::thread::hardware_concurrency()));
+    clang::tooling::ArgumentsAdjuster argumentsAdjusterSyntaxOnly =
+            clang::tooling::getClangSyntaxOnlyAdjuster();
+    clang::tooling::ArgumentsAdjuster argumentsAdjusterLocal = getClangArgumentAdjuster();
+    clang::tooling::ArgumentsAdjuster argumentsAdjuster =
+            clang::tooling::combineAdjusters(argumentsAdjusterLocal, argumentsAdjusterSyntaxOnly);
 
     for (size_t i = 0; i < idealProducerCount; ++i) {
-        std::thread producer([&ppSources, &db, &ppStore]() {
+        std::thread producer([&ppSources, &db, &ppStore, &argumentsAdjuster]() {
             std::string file;
             while (ppSources.next(&file)) {
                 clang::tooling::ClangTool tool(*db, file);
-                tool.appendArgumentsAdjuster(getClangArgumentAdjuster());
+                tool.appendArgumentsAdjuster(argumentsAdjuster);
                 tool.run(new LupdatePreprocessorActionFactory(&ppStore));
             }
         });
@@ -398,14 +479,14 @@ void ClangCppParser::loadCPP(Translator &translator, const QStringList &files, C
         producer.join();
     producers.clear();
 
-    ReadSynchronizedRef<std::string> astSources(sourcesAst);
+    ReadSynchronizedRef<std::string> astSources(sources);
     idealProducerCount = std::min(astSources.size(), size_t(std::thread::hardware_concurrency()));
     for (size_t i = 0; i < idealProducerCount; ++i) {
-        std::thread producer([&astSources, &db, &stores]() {
+        std::thread producer([&astSources, &db, &stores, &argumentsAdjuster]() {
             std::string file;
             while (astSources.next(&file)) {
                 clang::tooling::ClangTool tool(*db, file);
-                tool.appendArgumentsAdjuster(getClangArgumentAdjuster());
+                tool.appendArgumentsAdjuster(argumentsAdjuster);
                 tool.run(new LupdateToolActionFactory(&stores));
             }
         });

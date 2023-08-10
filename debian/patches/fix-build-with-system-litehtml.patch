@@ -1,0 +1,62 @@
+From: Rob Savoury <savoury@savos.tech>
+Date: Tue, 23 Aug 2022 13:39:08 -0700
+Subject: Fix build with system litehtml
+
+CMake errors out when using system litehtml (which depends on gumbo) due being
+unable to set definitions for libraries not built by the Qt6 Tools project:
+
+ CMake Error at /usr/lib/x86_64-linux-gnu/cmake/Qt6/QtFlagHandlingHelpers.cmake:171 (target_compile_definitions):
+   Cannot specify compile definitions for target "litehtml" which is not built
+   by this project.
+ Call Stack (most recent call first):
+   src/assistant/CMakeLists.txt:34 (qt_internal_set_exceptions_flags)
+
+
+ CMake Error at /usr/lib/x86_64-linux-gnu/cmake/Qt6/QtFlagHandlingHelpers.cmake:190 (get_target_property):
+   get_target_property() called with non-existent target "litehtml".
+ Call Stack (most recent call first):
+   src/assistant/CMakeLists.txt:35 (qt_disable_warnings)
+
+
+ CMake Error at /usr/lib/x86_64-linux-gnu/cmake/Qt6/QtFlagHandlingHelpers.cmake:190 (get_target_property):
+   get_target_property() called with non-existent target "gumbo".
+ Call Stack (most recent call first):
+   src/assistant/CMakeLists.txt:37 (qt_disable_warnings)
+
+Also, litehtml > 0.5 reorganises the headers into a litehtml sub-directory
+(this build is with exactly litehtml 0.5+git20211028, the same version found
+in Qt6 Tools source code). Fix the build by removing attempts to set Qt defs
+for litehtml/gumbo and by using the new path to the primary header.
+---
+
+diff --git a/src/assistant/CMakeLists.txt b/src/assistant/CMakeLists.txt
+index 868eefdad..9253ed815 100644
+--- a/src/assistant/CMakeLists.txt
++++ b/src/assistant/CMakeLists.txt
+@@ -35,13 +35,6 @@ if(TARGET qlitehtml)
+     # but found in the system, because they are imported only to the subdirectory scope
+     # where find_package was called. But that's fine, we wouldn't be able to set compiler flags
+     # on them anyway.
+-    if(TARGET litehtml)
+-        qt_internal_set_exceptions_flags(litehtml OFF)
+-        qt_disable_warnings(litehtml)
+-    endif()
+-    if(TARGET gumbo)
+-        qt_disable_warnings(gumbo)
+-    endif()
+     qt_disable_warnings(qlitehtml)
+     qt_handle_multi_config_output_dirs(qlitehtml)
+     set_target_properties(qlitehtml PROPERTIES
+diff --git src/assistant/qlitehtml/src/container_qpainter_p.h b/src/assistant/qlitehtml/src/container_qpainter_p.h
+index 074f8d7..ecfa2f3 100644
+--- a/src/assistant/qlitehtml/src/container_qpainter_p.h
++++ b/src/assistant/qlitehtml/src/container_qpainter_p.h
+@@ -30,7 +30,7 @@
+ 
+ #include "container_qpainter.h"
+ 
+-#include <litehtml.h>
++#include <litehtml/litehtml.h>
+ 
+ #include <QPaintDevice>
+ #include <QPixmap>

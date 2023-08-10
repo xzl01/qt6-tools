@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "propertyeditor.h"
 
@@ -214,20 +189,12 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
     m_buttonAction(new QAction(tr("Drop Down Button View"), this)),
     m_classLabel(new ElidingLabel)
 {
-    QList<QColor> colors;
-    colors.reserve(6);
-    colors.push_back(QColor(255, 230, 191));
-    colors.push_back(QColor(255, 255, 191));
-    colors.push_back(QColor(191, 255, 191));
-    colors.push_back(QColor(199, 255, 255));
-    colors.push_back(QColor(234, 191, 255));
-    colors.push_back(QColor(255, 191, 239));
-    m_colors.reserve(colors.count());
+    const QColor colors[] = {{255, 230, 191}, {255, 255, 191}, {191, 255, 191},
+                             {199, 255, 255}, {234, 191, 255}, {255, 191, 239}};
     const int darknessFactor = 250;
-    for (int i = 0; i < colors.count(); i++) {
-        const QColor &c = colors.at(i);
+    m_colors.reserve(std::size(colors));
+    for (const QColor &c : colors)
         m_colors.push_back(qMakePair(c, c.darker(darknessFactor)));
-    }
     QColor dynamicColor(191, 207, 255);
     QColor layoutColor(255, 191, 191);
     m_dynamicColor = qMakePair(dynamicColor, dynamicColor.darker(darknessFactor));
@@ -374,6 +341,9 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
 
 PropertyEditor::~PropertyEditor()
 {
+    // Prevent emission of QtTreePropertyBrowser::itemChanged() when deleting
+    // the current item, causing asserts.
+    m_treeBrowser->setCurrentItem(nullptr);
     storeExpansionState();
     saveSettings();
 }
@@ -588,7 +558,7 @@ QColor PropertyEditor::propertyColor(QtProperty *property) const
         else if (isLayoutGroup(groupProperty))
             pair = m_layoutColor;
         else
-            pair = m_colors[groupIdx % m_colors.count()];
+            pair = m_colors[groupIdx % m_colors.size()];
     }
     if (!m_brightness)
         return pair.first;
@@ -601,7 +571,7 @@ void PropertyEditor::fillView()
         for (auto itProperty = m_nameToProperty.cbegin(), end = m_nameToProperty.cend(); itProperty != end; ++itProperty)
             m_currentBrowser->addProperty(itProperty.value());
     } else {
-        for (QtProperty *group : qAsConst(m_groups)) {
+        for (QtProperty *group : std::as_const(m_groups)) {
             QtBrowserItem *item = m_currentBrowser->addProperty(group);
             if (m_currentBrowser == m_treeBrowser)
                 m_treeBrowser->setBackgroundColor(item, propertyColor(group));

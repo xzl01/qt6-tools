@@ -1,0 +1,9 @@
+Document: qt6-qtlinguist-manual
+Title: Qt 6 Linguist
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 Linguist
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qtlinguist/qtlinguist-index.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qtlinguist/*.html

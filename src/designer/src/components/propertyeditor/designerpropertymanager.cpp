@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "designerpropertymanager.h"
 #include "qtpropertymanager.h"
@@ -1015,10 +990,10 @@ void DesignerPropertyManager::slotValueChanged(QtProperty *property, const QVari
 
     if (QtProperty *flagProperty = m_flagToProperty.value(property, 0)) {
         const auto subFlags = m_propertyToFlags.value(flagProperty);
-        const int subFlagCount = subFlags.count();
+        const qsizetype subFlagCount = subFlags.size();
         // flag changed
         const bool subValue = variantProperty(property)->value().toBool();
-        const int subIndex = subFlags.indexOf(property);
+        const qsizetype subIndex = subFlags.indexOf(property);
         if (subIndex < 0)
             return;
 
@@ -1030,21 +1005,21 @@ void DesignerPropertyManager::slotValueChanged(QtProperty *property, const QVari
         const auto values = data.values;
         // Compute new value, without including (additional) supermasks
         if (values.at(subIndex) == 0) {
-            for (int i = 0; i < subFlagCount; ++i) {
+            for (qsizetype i = 0; i < subFlagCount; ++i) {
                 QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                 subFlag->setValue(i == subIndex);
             }
         } else {
             if (subValue)
                 newValue = values.at(subIndex); // value mask of subValue
-            for (int i = 0; i < subFlagCount; ++i) {
+            for (qsizetype i = 0; i < subFlagCount; ++i) {
                 QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                 if (subFlag->value().toBool() && bitCount(values.at(i)) == 1)
                     newValue |= values.at(i);
             }
             if (newValue == 0) {
                 // Uncheck all items except 0-mask
-                for (int i = 0; i < subFlagCount; ++i) {
+                for (qsizetype i = 0; i < subFlagCount; ++i) {
                     QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                     subFlag->setValue(values.at(i) == 0);
                 }
@@ -1055,7 +1030,7 @@ void DesignerPropertyManager::slotValueChanged(QtProperty *property, const QVari
                 }
             } else {
                 // Make sure 0-mask is not selected
-                for (int i = 0; i < subFlagCount; ++i) {
+                for (qsizetype i = 0; i < subFlagCount; ++i) {
                     QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                     if (values.at(i) == 0)
                         subFlag->setValue(false);
@@ -1063,7 +1038,7 @@ void DesignerPropertyManager::slotValueChanged(QtProperty *property, const QVari
                 // Check/uncheck proper masks
                 if (subValue) {
                     // Make sure submasks and supermasks are selected
-                    for (int i = 0; i < subFlagCount; ++i) {
+                    for (qsizetype i = 0; i < subFlagCount; ++i) {
                         QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                         const uint vi = values.at(i);
                         if ((vi != 0) && ((vi & newValue) == vi) && !subFlag->value().toBool())
@@ -1071,7 +1046,7 @@ void DesignerPropertyManager::slotValueChanged(QtProperty *property, const QVari
                     }
                 } else {
                     // Make sure supermasks are not selected if they're no longer valid
-                    for (int i = 0; i < subFlagCount; ++i) {
+                    for (qsizetype i = 0; i < subFlagCount; ++i) {
                         QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
                         const uint vi = values.at(i);
                         if (subFlag->value().toBool() && ((vi & newValue) != vi))
@@ -1292,7 +1267,7 @@ void DesignerPropertyManager::setAttribute(QtProperty *property,
             return;
 
         PropertyToPropertyListMap::iterator pfit = m_propertyToFlags.find(property);
-        for (QtProperty *prop : qAsConst(pfit.value())) {
+        for (QtProperty *prop : std::as_const(pfit.value())) {
             if (prop) {
                 delete prop;
                 m_flagToProperty.remove(prop);
@@ -1777,15 +1752,15 @@ void DesignerPropertyManager::setValue(QtProperty *property, const QVariant &val
 
         const auto values = data.values;
         const auto subFlags = m_propertyToFlags.value(property);
-        const int subFlagCount = subFlags.count();
-        for (int i = 0; i < subFlagCount; ++i) {
+        const qsizetype subFlagCount = subFlags.size();
+        for (qsizetype i = 0; i < subFlagCount; ++i) {
             QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
             const uint val = values.at(i);
             const bool checked = (val == 0) ? (v == 0) : ((val & v) == val);
             subFlag->setValue(checked);
         }
 
-        for (int i = 0; i < subFlagCount; ++i) {
+        for (qsizetype i = 0; i < subFlagCount; ++i) {
             QtVariantProperty *subFlag = variantProperty(subFlags.at(i));
             const uint val = values.at(i);
             const bool checked = (val == 0) ? (v == 0) : ((val & v) == val);
@@ -1796,7 +1771,7 @@ void DesignerPropertyManager::setValue(QtProperty *property, const QVariant &val
             } else if (bitCount(val) > 1) {
                 // Disabled if all flags contained in the mask are checked
                 uint currentMask = 0;
-                for (int j = 0; j < subFlagCount; ++j) {
+                for (qsizetype j = 0; j < subFlagCount; ++j) {
                     QtVariantProperty *subFlag = variantProperty(subFlags.at(j));
                     if (bitCount(values.at(j)) == 1)
                         currentMask |= subFlag->value().toBool() ? values.at(j) : 0;

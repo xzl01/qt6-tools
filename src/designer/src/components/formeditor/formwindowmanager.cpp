@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 // components/formeditor
 #include "formwindowmanager.h"
@@ -639,7 +614,7 @@ void FormWindowManager::slotActionAdjustSizeActivated()
     }
 
     // Always count the main container as unlaid-out
-    for (QWidget *widget : qAsConst(selectedWidgets)) {
+    for (QWidget *widget : std::as_const(selectedWidgets)) {
         bool unlaidout = LayoutInfo::layoutType(core(), widget->parentWidget()) == LayoutInfo::NoLayout;
         bool isMainContainer = m_activeFormWindow->isMainContainer(widget);
 
@@ -751,7 +726,7 @@ QSet<QWidget *> FormWindowManager::getUnsortedLayoutsToBeBroken(bool firstOnly) 
     if (selection.isEmpty() && m_activeFormWindow->mainContainer())
         selection.append(m_activeFormWindow->mainContainer());
 
-    for (QWidget *selectedWidget : qAsConst(selection)) {
+    for (QWidget *selectedWidget : std::as_const(selection)) {
         // find all layouts
         const QWidgetList &list = layoutsToBeBroken(selectedWidget);
         if (!list.isEmpty()) {
@@ -811,7 +786,7 @@ void FormWindowManager::slotUpdateActions()
     bool canMorphIntoHBoxLayout = false;
     bool canMorphIntoGridLayout = false;
     bool canMorphIntoFormLayout = false;
-    int selectedWidgetCount = 0;
+    bool hasSelectedWidgets = false;
     int laidoutWidgetCount = 0;
     int unlaidoutWidgetCount = 0;
 #if QT_CONFIG(clipboard)
@@ -831,7 +806,7 @@ void FormWindowManager::slotUpdateActions()
 
         QWidgetList simplifiedSelection = m_activeFormWindow->selectedWidgets();
 
-        selectedWidgetCount = simplifiedSelection.count();
+        hasSelectedWidgets = !simplifiedSelection.isEmpty();
 #if QT_CONFIG(clipboard)
         pasteAvailable = qApp->clipboard()->mimeData() && qApp->clipboard()->mimeData()->hasText();
 #endif
@@ -854,7 +829,7 @@ void FormWindowManager::slotUpdateActions()
         }
 
         // Figure out layouts: Looking at a group of dangling widgets
-        if (simplifiedSelection.count() != 1) {
+        if (simplifiedSelection.size() != 1) {
             layoutAvailable = unlaidoutWidgetCount > 1;
             //breakAvailable = false;
             break;
@@ -903,13 +878,13 @@ void FormWindowManager::slotUpdateActions()
     } while(false);
 
 #if QT_CONFIG(clipboard)
-    m_actionCut->setEnabled(selectedWidgetCount > 0);
-    m_actionCopy->setEnabled(selectedWidgetCount > 0);
+    m_actionCut->setEnabled(hasSelectedWidgets);
+    m_actionCopy->setEnabled(hasSelectedWidgets);
     m_actionPaste->setEnabled(pasteAvailable);
 #endif
-    m_actionDelete->setEnabled(selectedWidgetCount > 0);
-    m_actionLower->setEnabled(canChangeZOrder && selectedWidgetCount > 0);
-    m_actionRaise->setEnabled(canChangeZOrder && selectedWidgetCount > 0);
+    m_actionDelete->setEnabled(hasSelectedWidgets);
+    m_actionLower->setEnabled(canChangeZOrder && hasSelectedWidgets);
+    m_actionRaise->setEnabled(canChangeZOrder && hasSelectedWidgets);
 
 
     m_actionSelectAll->setEnabled(m_activeFormWindow != nullptr);

@@ -1,36 +1,39 @@
 Source: qt6-tools
 Section: libs
 Priority: optional
-Maintainer: Deepin Developer <deepin-dev@deepin.org>
-Uploaders: Deepin Packages Builder <packages@deepin.org>
-Build-Depends: clang (>= 1:13~),
-               cmake (>= 3.18~),
+Maintainer: Debian Qt/KDE Maintainers <debian-qt-kde@lists.debian.org>
+Uploaders: Patrick Franz <deltaone@debian.org>,
+Build-Depends: clang-14,
+               cmake (>= 3.24~),
                debhelper-compat (= 13),
-               libclang-dev (>= 1:13~),
+               libclang-14-dev,
                libgl-dev,
-               liblitehtml-dev,
-               libqt6opengl6-dev (>= 6.2.4~),
+               liblitehtml-dev (>= 0.6~),
                libssl-dev,
                libvulkan-dev [linux-any],
                libxcb-xkb-dev,
-               llvm-dev (>= 1:13~),
+               llvm-14-dev,
                ninja-build,
                pkg-config,
                pkg-kde-tools,
-               qt6-base-dev (>= 6.2.4~),
-               qt6-base-private-dev (>= 6.2.4~),
-               qt6-declarative-dev (>= 6.2.4~),
-               qt6-declarative-private-dev (>= 6.2.4~),
-Standards-Version: 4.6.0
+               qt6-base-dev (>= 6.4.2+dfsg~),
+               qt6-base-private-dev (>= 6.4.2+dfsg~),
+               qt6-declarative-dev (>= 6.4.2+dfsg~),
+               qt6-declarative-private-dev (>= 6.4.2+dfsg~),
+Build-Depends-Indep: qt6-base-dev (>= 6.4~) <!nodoc>,
+                     qt6-documentation-tools (>= 6.4~) <!nodoc>,
+Standards-Version: 4.6.2
 Homepage: https://www.qt.io/developers/
+Vcs-Browser: https://salsa.debian.org/qt-kde-team/qt6/qt6-tools
+Vcs-Git: https://salsa.debian.org/qt-kde-team/qt6/qt6-tools.git
 Rules-Requires-Root: no
 
 Package: libqt6designer6
 Architecture: any
 Multi-Arch: same
-Provides: qt6-designer-abi (= 6.2.4)
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: qt6-designer-abi (= 6.4.2),
+Pre-Depends: ${misc:Pre-Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Designer library
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -42,8 +45,8 @@ Description: Qt 6 Designer library
 Package: libqt6designercomponents6
 Architecture: any
 Multi-Arch: same
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Pre-Depends: ${misc:Pre-Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Designer Components library
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -53,9 +56,9 @@ Description: Qt 6 Designer Components library
 Package: libqt6help6
 Architecture: any
 Multi-Arch: same
-Provides: qt6-help-abi (= 6.2.4)
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: qt6-help-abi (= 6.4.2),
+Pre-Depends: ${misc:Pre-Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Help library
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -66,9 +69,9 @@ Description: Qt 6 Help library
 Package: libqt6uitools6
 Architecture: any
 Multi-Arch: same
-Provides: qt6-uitools-abi (= 6.2.4)
-Pre-Depends: ${misc:Pre-Depends}
-Depends: ${misc:Depends}, ${shlibs:Depends}
+Provides: qt6-uitools-abi (= 6.4.2),
+Pre-Depends: ${misc:Pre-Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 UI tools library
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -79,7 +82,7 @@ Package: assistant-qt6
 Architecture: any
 Multi-Arch: foreign
 Section: devel
-Depends: qtchooser, ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Assistant
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -91,7 +94,7 @@ Package: designer-qt6
 Architecture: any
 Multi-Arch: foreign
 Section: devel
-Depends: qtchooser, ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Designer
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -103,19 +106,31 @@ Package: linguist-qt6
 Architecture: any
 Multi-Arch: foreign
 Section: devel
-Depends: qtchooser, ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 Linguist
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
  .
  Qt Linguist is a tool for adding translations to Qt applications.
 
+Package: qdbus-qt6
+Architecture: any
+Multi-Arch: foreign
+Section: utils
+Depends: ${misc:Depends}, ${shlibs:Depends},
+Breaks: qt6-tools-dev-tools (<< 6.3.1-2~),
+Replaces: qt6-tools-dev-tools (<< 6.3.1-2~),
+Description: Qt 6 D-Bus application
+ Qt is a cross-platform C++ application framework. Qt's primary feature
+ is its rich set of widgets that provide standard GUI functionality.
+ .
+ qdbus is a tool for listing D-Bus services and its properties.
+
 Package: qt6-documentation-tools
 Architecture: any
 Multi-Arch: foreign
 Section: utils
-Depends: qtchooser, ${misc:Depends}, ${shlibs:Depends},
-         libqt6sql6-sqlite,
+Depends: libqt6sql6-sqlite, ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 documentation tools
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -137,7 +152,7 @@ Package: qt6-l10n-tools
 Architecture: any
 Multi-Arch: foreign
 Section: utils
-Depends: qtchooser, ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends},
 Description: Qt 6 translation tools
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -166,7 +181,7 @@ Package: qt6-tools-private-dev
 Architecture: any
 Multi-Arch: same
 Section: libdevel
-Depends: qt6-tools-dev (= ${binary:Version}), ${misc:Depends}
+Depends: qt6-tools-dev (= ${binary:Version}), ${misc:Depends},
 Description: Qt 6 Tools - private development files
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -179,12 +194,14 @@ Package: qt6-tools-dev-tools
 Architecture: any
 Multi-Arch: foreign
 Section: devel
-Depends: ${misc:Depends}, ${shlibs:Depends},
-         assistant-qt6 (= ${binary:Version}),
+Depends: assistant-qt6 (= ${binary:Version}),
          designer-qt6 (= ${binary:Version}),
          linguist-qt6 (= ${binary:Version}),
+         qdbus-qt6 (= ${binary:Version}),
          qt6-documentation-tools (= ${binary:Version}),
          qt6-l10n-tools (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
 Description: Qt 6 development tools
  Qt is a cross-platform C++ application framework. Qt's primary feature
  is its rich set of widgets that provide standard GUI functionality.
@@ -194,3 +211,48 @@ Description: Qt 6 development tools
  helps in Qt development. These tools are among others:
   * pixeltool
   * qdbusviewer
+
+Package: qt6-tools-doc
+Architecture: all
+Section: doc
+Depends: qt6-base-doc, ${misc:Depends},
+Multi-Arch: foreign
+Description: Qt 6 tools documentation
+ Qt is a cross-platform C++ application framework. Qt's primary feature
+ is its rich set of widgets that provide standard GUI functionality.
+ .
+ This package contains the documentation for the Qt 6 tools.
+
+Package: qt6-tools-doc-html
+Architecture: all
+Section: doc
+Depends: qt6-base-doc-html, ${misc:Depends},
+Multi-Arch: foreign
+Description: Qt 6 tools HTML documentation
+ Qt is a cross-platform C++ application framework. Qt's primary feature
+ is its rich set of widgets that provide standard GUI functionality.
+ .
+ This package contains the HTML documentation for the Qt 6 tools.
+
+Package: qt6-tools-doc-dev
+Architecture: all
+Section: libdevel
+Depends: qt6-base-doc-dev, ${misc:Depends},
+Multi-Arch: foreign
+Description: Qt 6 tools tags files
+ Qt is a cross-platform C++ application framework. Qt's primary feature
+ is its rich set of widgets that provide standard GUI functionality.
+ .
+ This package contains the doxygen tags files for the qt tools
+ documentation.
+
+Package: qt6-tools-examples
+Architecture: any
+Multi-Arch: same
+Section: misc
+Depends: ${misc:Depends}, ${shlibs:Depends},
+Description: Qt 6 tools examples
+ Qt is a cross-platform C++ application framework. Qt's primary feature
+ is its rich set of widgets that provide standard GUI functionality.
+ .
+ This package contains the examples for the Qt tools submodule.

@@ -1,0 +1,9 @@
+Document: qt6-assistant-manual
+Title: Qt 6 assistant
+Author: The Qt Company Ltd
+Abstract: This is the HTML documentation for Qt 6 assistant
+Section: Programming/C++
+
+Format: HTML
+Index: /usr/share/doc/qt6-tools-doc-html/html/qtassistant/qtassistant-index.html
+Files: /usr/share/doc/qt6-tools-doc-html/html/qtassistant/*.html

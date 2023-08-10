@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 #include "manifestwriter.h"
 
 #include "config.h"
@@ -250,7 +225,7 @@ void ManifestWriter::generateManifestFile(const QString &manifest, const QString
             for (const auto &attribute : attributes) {
                 const QLatin1Char div(':');
                 QStringList attrList = attribute.split(div);
-                if (attrList.count() == 1)
+                if (attrList.size() == 1)
                     attrList.append(QStringLiteral("true"));
                 QString attrName = attrList.takeFirst();
                 if (!usedAttributes.contains(attrName))
@@ -265,9 +240,7 @@ void ManifestWriter::generateManifestFile(const QString &manifest, const QString
 
         warnAboutUnusedAttributes(usedAttributes.keys(), example);
         writeDescription(&writer, example);
-        addWordsFromModuleNamesAsTags();
-        addTitleWordsToTags(example);
-        cleanUpTags();
+        addModuleNameAsTag();
         writeTagsElement(&writer);
 
         const QString exampleName = example->name().mid(example->name().lastIndexOf('/') + 1);
@@ -305,59 +278,20 @@ void ManifestWriter::writeTagsElement(QXmlStreamWriter *writer)
 /*!
     \internal
 
-    Clean up tags, exclude invalid and common words.
- */
-void ManifestWriter::cleanUpTags()
-{
-    QSet<QString> cleanedTags;
-
-    for (auto tag : m_tags) {
-        if (tag.at(0) == '(')
-            tag.remove(0, 1).chop(1);
-        if (tag.endsWith(QLatin1Char(':')))
-            tag.chop(1);
-
-        if (tag.length() < 2 || tag.at(0).isDigit() || tag.at(0) == '-'
-            || tag == QLatin1String("qt") || tag == QLatin1String("the")
-            || tag == QLatin1String("and") || tag == QLatin1String("doc")
-            || tag.startsWith(QLatin1String("example")) || tag.startsWith(QLatin1String("chapter")))
-            continue;
-        cleanedTags << tag;
-    }
-    m_tags = cleanedTags;
-}
-
-/*!
-    \internal
-
-    Add the example's title as tags.
- */
-void ManifestWriter::addTitleWordsToTags(const ExampleNode *example)
-{
-    Q_ASSERT(example);
-
-    const auto &titleWords = example->title().toLower().split(QLatin1Char(' '));
-    m_tags += QSet<QString>(titleWords.cbegin(), titleWords.cend());
-}
-
-/*!
-    \internal
-
     Add words from module name as tags
-    QtQuickControls -> qt,quick,controls
-    QtOpenGL -> qt,opengl
-    QtQuick3D -> qt,quick3d
+    QtQuickControls -> quickcontrols
+    QtOpenGL -> opengl
+    QtQuick3D -> quick3d
  */
-void ManifestWriter::addWordsFromModuleNamesAsTags()
+void ManifestWriter::addModuleNameAsTag()
 {
-    // '?<=': positive lookbehind
-    QRegularExpression re("([A-Z]+[a-z0-9]*((?<=3)D|GL)?)");
-    qsizetype pos = 0;
-    QRegularExpressionMatch match;
-    while ((match = re.match(m_project, pos)).hasMatch()) {
-        m_tags << match.captured(1).toLower();
-        pos = match.capturedEnd();
-    }
+    QString moduleName = m_project;
+    if (moduleName.startsWith("Qt"))
+        moduleName = moduleName.mid(2);
+    // Some examples are in QtDoc module, but 'doc' as tag makes little sense
+    if (moduleName == "Doc")
+        return;
+    m_tags << moduleName.toLower();
 }
 
 /*!

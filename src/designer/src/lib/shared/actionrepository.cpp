@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "actionrepository_p.h"
 #include "qtresourceview_p.h"
@@ -139,14 +114,16 @@ QModelIndex ActionModel::addAction(QAction *action)
 // Find the associated menus and toolbars, ignore toolbuttons
 QWidgetList ActionModel::associatedWidgets(const QAction *action)
 {
-    QWidgetList rc = action->associatedWidgets();
-    for (QWidgetList::iterator it = rc.begin(); it != rc.end(); )
-        if (qobject_cast<const QMenu *>(*it) || qobject_cast<const QToolBar *>(*it)) {
-            ++it;
-        } else {
-            it = rc.erase(it);
+    const QObjectList rc = action->associatedObjects();
+    QWidgetList result;
+    result.reserve(rc.size());
+    for (QObject *obj : rc) {
+        if (QWidget *w = qobject_cast<QWidget *>(obj)) {
+            if (qobject_cast<const QMenu *>(w) || qobject_cast<const QToolBar *>(w))
+                result.push_back(w);
         }
-    return rc;
+    }
+    return result;
 }
 
 // shortcut is a fake property, need to retrieve it via property sheet.
@@ -643,9 +620,9 @@ QPixmap  ActionRepositoryMimeData::actionDragPixmap(const QAction *action)
     if (!icon.isNull())
         return icon.pixmap(QSize(22, 22));
 
-    const QWidgetList &associatedWidgets = action->associatedWidgets();
-    for (QWidget *w : associatedWidgets) {
-        if (QToolButton *tb = qobject_cast<QToolButton *>(w))
+    const QObjectList associatedObjects = action->associatedObjects();
+    for (QObject *o : associatedObjects) {
+        if (QToolButton *tb = qobject_cast<QToolButton *>(o))
             return tb->grab(QRect(0, 0, -1, -1));
     }
 

@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "pluginmanager_p.h"
 #include "qdesigner_utils_p.h"
@@ -49,6 +24,8 @@
 #include <QtCore/qcoreapplication.h>
 
 #include <QtCore/qxmlstream.h>
+
+using namespace Qt::StringLiterals;
 
 static const char *uiElementC = "ui";
 static const char *languageAttributeC = "language";
@@ -98,21 +75,10 @@ QStringList QDesignerPluginManager::defaultPluginPaths()
 
     const QStringList path_list = QCoreApplication::libraryPaths();
 
-    const QString designer = QStringLiteral("designer");
-    for (const QString &path : path_list) {
-        QString libPath = path;
-        libPath += QDir::separator();
-        libPath += designer;
-        result.append(libPath);
-    }
+    for (const QString &path : path_list)
+        result.append(path + u"/designer"_s);
 
-    QString homeLibPath = QDir::homePath();
-    homeLibPath += QDir::separator();
-    homeLibPath += QStringLiteral(".designer");
-    homeLibPath += QDir::separator();
-    homeLibPath += QStringLiteral("plugins");
-
-    result.append(homeLibPath);
+    result.append(qdesigner_internal::dataDirectory() + u"/plugins"_s);
     return result;
 }
 
@@ -461,7 +427,7 @@ class QDesignerPluginManagerPrivate {
     bool addCustomWidget(QDesignerCustomWidgetInterface *c,
                          const QString &pluginPath,
                          const QString &designerLanguage);
-    void addCustomWidgets(const QObject *o,
+    void addCustomWidgets(QObject *o,
                           const QString &pluginPath,
                           const QString &designerLanguage);
 
@@ -535,7 +501,7 @@ bool QDesignerPluginManagerPrivate::addCustomWidget(QDesignerCustomWidgetInterfa
 
 // Check the plugin interface for either a custom widget or a collection and
 // add all contained custom widgets.
-void QDesignerPluginManagerPrivate::addCustomWidgets(const QObject *o,
+void QDesignerPluginManagerPrivate::addCustomWidgets(QObject *o,
                                                      const QString &pluginPath,
                                                      const QString &designerLanguage)
 {
@@ -543,7 +509,7 @@ void QDesignerPluginManagerPrivate::addCustomWidgets(const QObject *o,
         addCustomWidget(c, pluginPath, designerLanguage);
         return;
     }
-    if (const QDesignerCustomWidgetCollectionInterface *coll = qobject_cast<QDesignerCustomWidgetCollectionInterface*>(o)) {
+    if (QDesignerCustomWidgetCollectionInterface *coll = qobject_cast<QDesignerCustomWidgetCollectionInterface*>(o)) {
         const auto &collCustomWidgets = coll->customWidgets();
         for (QDesignerCustomWidgetInterface *c : collCustomWidgets)
             addCustomWidget(c, pluginPath, designerLanguage);
@@ -662,7 +628,7 @@ void QDesignerPluginManager::updateRegisteredPlugins()
     if (debugPluginManager)
         qDebug() << Q_FUNC_INFO;
     m_d->m_registeredPlugins.clear();
-    for (const QString &path : qAsConst(m_d->m_pluginPaths))
+    for (const QString &path : std::as_const(m_d->m_pluginPaths))
         registerPath(path);
 }
 
@@ -672,7 +638,7 @@ bool QDesignerPluginManager::registerNewPlugins()
         qDebug() << Q_FUNC_INFO;
 
     const int before = m_d->m_registeredPlugins.size();
-    for (const QString &path : qAsConst(m_d->m_pluginPaths))
+    for (const QString &path : std::as_const(m_d->m_pluginPaths))
         registerPath(path);
     const bool newPluginsFound = m_d->m_registeredPlugins.size() > before;
     // We force a re-initialize as Jambi collection might return
@@ -743,7 +709,7 @@ void QDesignerPluginManager::ensureInitialized()
         for (QObject *o : staticPluginObjects)
             m_d->addCustomWidgets(o, staticPluginPath, designerLanguage);
     }
-    for (const QString &plugin : qAsConst(m_d->m_registeredPlugins)) {
+    for (const QString &plugin : std::as_const(m_d->m_registeredPlugins)) {
         if (QObject *o = instance(plugin))
             m_d->addCustomWidgets(o, plugin, designerLanguage);
     }

@@ -1,5 +1,4 @@
 usr/lib/qt6/bin/pixeltool
-usr/lib/qt6/bin/qdbus
 usr/lib/qt6/bin/qdbusviewer
 usr/lib/qt6/bin/qdistancefieldgenerator
 usr/lib/qt6/bin/qtdiag

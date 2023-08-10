@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdesigner_menubar_p.h"
 #include "qdesigner_menu_p.h"
@@ -223,7 +198,7 @@ bool QDesignerMenuBar::handleKeyPressEvent(QWidget *, QKeyEvent *e)
             break;
 
         case Qt::Key_PageDown:
-            m_currentIndex = actions().count() - 1;
+            m_currentIndex = actions().size() - 1;
             break;
 
         case Qt::Key_Enter:
@@ -365,7 +340,7 @@ bool QDesignerMenuBar::handleMouseMoveEvent(QWidget *, QMouseEvent *event)
         return true;
 
     const int index =  actionIndexAt(this, m_startPosition, Qt::Horizontal);
-    if (index < actions().count()) {
+    if (index < actions().size()) {
         hideMenu(index);
         update();
     }
@@ -503,7 +478,7 @@ void QDesignerMenuBar::showLineEdit()
     m_editor->selectAll();
     m_editor->setGeometry(actionGeometry(action));
     m_editor->show();
-    qApp->setActiveWindow(m_editor);
+    m_editor->activateWindow();
     m_editor->setFocus();
     m_editor->grabKeyboard();
 }
@@ -667,7 +642,7 @@ void QDesignerMenuBar::dropEvent(QDropEvent *event)
         if (checkAction(action) == AcceptActionDrag) {
             event->acceptProposedAction();
             int index = findAction(event->position().toPoint());
-            index = qMin(index, actions().count() - 1);
+            index = qMin(index, actions().size() - 1);
 
             QDesignerFormWindowInterface *fw = formWindow();
             InsertActionIntoCommand *cmd = new InsertActionIntoCommand(fw);
@@ -705,7 +680,7 @@ QDesignerActionProviderExtension *QDesignerMenuBar::actionProvider()
 
 QAction *QDesignerMenuBar::currentAction() const
 {
-    if (m_currentIndex < 0 || m_currentIndex >= actions().count())
+    if (m_currentIndex < 0 || m_currentIndex >= actions().size())
         return nullptr;
 
     return safeActionAt(m_currentIndex);
@@ -713,7 +688,7 @@ QAction *QDesignerMenuBar::currentAction() const
 
 int QDesignerMenuBar::realActionCount() const
 {
-    return actions().count() - 1; // 1 fake actions
+    return actions().size() - 1; // 1 fake actions
 }
 
 bool QDesignerMenuBar::dragging() const
@@ -753,7 +728,7 @@ void QDesignerMenuBar::movePrevious(bool ctrl)
 void QDesignerMenuBar::moveNext(bool ctrl)
 {
     const bool swapped = ctrl && swapActions(m_currentIndex + 1, m_currentIndex);
-    const int newIndex = qMin(actions().count() - 1, m_currentIndex + 1);
+    const int newIndex = qMin(actions().size() - 1, m_currentIndex + 1);
     if (swapped || newIndex != m_currentIndex) {
         m_currentIndex = newIndex;
         updateCurrentAction(!ctrl);
@@ -858,7 +833,7 @@ void QDesignerMenuBar::showMenu(int index)
 
 QAction *QDesignerMenuBar::safeActionAt(int index) const
 {
-    if (index < 0 || index >= actions().count())
+    if (index < 0 || index >= actions().size())
         return nullptr;
 
     return actions().at(index);

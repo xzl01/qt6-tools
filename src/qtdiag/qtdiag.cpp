@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qtdiag.h"
 
@@ -240,7 +215,7 @@ void dumpGlInfo(QTextStream &str, bool listExtensions)
             QByteArrayList extensionList = context.extensions().values();
             std::sort(extensionList.begin(), extensionList.end());
             str << " \nFound " << extensionList.size() << " extensions:\n";
-            for (const QByteArray &extension : qAsConst(extensionList))
+            for (const QByteArray &extension : std::as_const(extensionList))
                 str << "  " << extension << '\n';
         }
     } else {
@@ -320,6 +295,12 @@ void dumpRhiBackendInfo(QTextStream &str, const char *name, QRhi::Implementation
         { "IntAttributes", QRhi::IntAttributes },
         { "ScreenSpaceDerivatives", QRhi::ScreenSpaceDerivatives },
         { "ReadBackAnyTextureFormat", QRhi::ReadBackAnyTextureFormat },
+        { "PipelineCacheDataLoadSave", QRhi::PipelineCacheDataLoadSave },
+        { "ImageDataStride", QRhi::ImageDataStride },
+        { "RenderBufferImport", QRhi::RenderBufferImport },
+        { "ThreeDimensionalTextures", QRhi::ThreeDimensionalTextures },
+        { "RenderTo3DTextureSlice", QRhi::RenderTo3DTextureSlice },
+        { "TextureArrays", QRhi::TextureArrays },
 
         { nullptr, QRhi::Feature(0) }
     };
@@ -381,6 +362,8 @@ void dumpRhiBackendInfo(QTextStream &str, const char *name, QRhi::Implementation
         str << "  MaxThreadGroupX: " << rhi->resourceLimit(QRhi::MaxThreadGroupX) << "\n";
         str << "  MaxThreadGroupY: " << rhi->resourceLimit(QRhi::MaxThreadGroupY) << "\n";
         str << "  MaxThreadGroupZ: " << rhi->resourceLimit(QRhi::MaxThreadGroupZ) << "\n";
+        str << "  TextureArraySizeMax: " << rhi->resourceLimit(QRhi::TextureArraySizeMax) << "\n";
+        str << "  MaxUniformBufferRange: " << rhi->resourceLimit(QRhi::MaxUniformBufferRange) << "\n";
         str << "  Uniform Buffer Alignment: " << rhi->ubufAlignment() << "\n";
         QByteArrayList supportedSampleCounts;
         for (int s : rhi->supportedSampleCounts())
@@ -463,7 +446,7 @@ static void dumpStandardLocation(QTextStream &str, QStandardPaths::StandardLocat
 
 #define DUMP_CPU_FEATURE(feature, name)                 \
     if (qCpuHasFeature(feature))                        \
-        str << " " name;
+        str << " " name
 
 #define DUMP_STANDARDPATH(str, location) \
     str << "  " << #location << ": "; \
@@ -581,6 +564,7 @@ QString qtDiag(unsigned flags)
 
     str << "\nArchitecture: " << QSysInfo::currentCpuArchitecture() << "; features:";
 #if defined(Q_PROCESSOR_X86)
+    DUMP_CPU_FEATURE(HYBRID, "hybrid");
     DUMP_CPU_FEATURE(SSE2, "SSE2");
     DUMP_CPU_FEATURE(SSE3, "SSE3");
     DUMP_CPU_FEATURE(SSSE3, "SSSE3");
@@ -588,8 +572,15 @@ QString qtDiag(unsigned flags)
     DUMP_CPU_FEATURE(SSE4_2, "SSE4.2");
     DUMP_CPU_FEATURE(AVX, "AVX");
     DUMP_CPU_FEATURE(AVX2, "AVX2");
-    DUMP_CPU_FEATURE(RTM, "RTM");
-    DUMP_CPU_FEATURE(HLE, "HLE");
+    DUMP_CPU_FEATURE(AVX512F, "AVX512F");
+    DUMP_CPU_FEATURE(AVX512IFMA, "AVX512IFMA");
+    DUMP_CPU_FEATURE(AVX512VBMI2, "AVX512VBMI2");
+    DUMP_CPU_FEATURE(AVX512FP16, "AVX512FP16");
+    DUMP_CPU_FEATURE(RDRND, "RDRAND");
+    DUMP_CPU_FEATURE(RDSEED, "RDSEED");
+    DUMP_CPU_FEATURE(AES, "AES");
+    DUMP_CPU_FEATURE(VAES, "VAES");
+    DUMP_CPU_FEATURE(SHA, "SHA");
 #elif defined(Q_PROCESSOR_ARM)
     DUMP_CPU_FEATURE(ARM_NEON, "Neon");
 #elif defined(Q_PROCESSOR_MIPS)
@@ -704,10 +695,13 @@ QString qtDiag(unsigned flags)
         << "  showIsMaximized: " << styleHints->showIsMaximized() << '\n'
         << "  passwordMaskDelay: " << styleHints->passwordMaskDelay() << '\n'
         << "  passwordMaskCharacter: ";
-    if (passwordMaskCharacter.unicode() >= 32 && passwordMaskCharacter.unicode() < 128)
+    const int passwordMaskCharacterUc = passwordMaskCharacter.unicode();
+    if (passwordMaskCharacterUc >= 32 && passwordMaskCharacterUc < 128) {
         str << '\'' << passwordMaskCharacter << '\'';
-    else
-        str << "U+" << qSetFieldWidth(4) << qSetPadChar('0') << Qt::uppercasedigits << Qt::hex << passwordMaskCharacter.unicode() << Qt::dec << qSetFieldWidth(0);
+    } else {
+        str << "U+" << qSetFieldWidth(4) << qSetPadChar('0') << Qt::uppercasedigits << Qt::hex
+            << passwordMaskCharacterUc << Qt::dec << qSetFieldWidth(0);
+    }
     str << '\n'
         << "  fontSmoothingGamma: " << styleHints->fontSmoothingGamma() << '\n'
         << "  useRtlExtensions: " << styleHints->useRtlExtensions() << '\n'

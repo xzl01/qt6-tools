@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2020 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2020 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "abstractformbuilder.h"
 #include "formbuilderextra_p.h"
@@ -1157,7 +1121,7 @@ DomWidget *QAbstractFormBuilder::createDom(QWidget *widget, DomWidget *ui_parent
         }
     }
 
-    for (QObject *obj : qAsConst(children)) {
+    for (QObject *obj : std::as_const(children)) {
         if (QWidget *childWidget = qobject_cast<QWidget*>(obj)) {
             if (d->m_laidout.contains(childWidget) || !recursive)
                 continue;
@@ -1347,7 +1311,7 @@ DomLayout *QAbstractFormBuilder::createDom(QLayout *layout, DomLayout *ui_layout
 
     QList<DomLayoutItem *> ui_items;
     ui_items.reserve(newList.size());
-    for (const FormBuilderSaveLayoutEntry &item : qAsConst(newList)) {
+    for (const FormBuilderSaveLayoutEntry &item : std::as_const(newList)) {
         if (DomLayoutItem *ui_item = createDom(item.item, lay, ui_parentWidget)) {
             if (item.row >= 0)
                 ui_item->setAttributeRow(item.row);
@@ -1972,7 +1936,7 @@ void QAbstractFormBuilder::saveItemViewExtraInfo(const QAbstractItemView *itemVi
                 const QString upperPropertyName = realPropertyName.at(0).toUpper()
                                                   + realPropertyName.mid(1);
                 const QString fakePropertyName = headerPrefix + upperPropertyName;
-                for (DomProperty *property : qAsConst(headerProperties)) {
+                for (DomProperty *property : std::as_const(headerProperties)) {
                     if (property->attributeName() == realPropertyName) {
                         property->setAttributeName(fakePropertyName);
                         viewProperties << property;
@@ -2076,10 +2040,10 @@ void QAbstractFormBuilder::loadTreeWidgetExtraInfo(DomWidget *ui_widget, QTreeWi
     const QFormBuilderStrings &strings = QFormBuilderStrings::instance();
     const QMetaEnum itemFlags_enum = metaEnum<QAbstractFormBuilderGadget>("itemFlags");
     const auto &columns = ui_widget->elementColumn();
-    if (columns.count() > 0)
-        treeWidget->setColumnCount(columns.count());
+    if (!columns.isEmpty())
+        treeWidget->setColumnCount(columns.size());
 
-    for (int i = 0; i<columns.count(); ++i) {
+    for (qsizetype i = 0, size = columns.size(); i < size; ++i) {
         const DomColumn *c = columns.at(i);
         const DomPropertyHash properties = propertyMap(c->elementProperty());
 
@@ -2179,9 +2143,9 @@ void QAbstractFormBuilder::loadTableWidgetExtraInfo(DomWidget *ui_widget, QTable
     Q_UNUSED(parentWidget);
 
     const auto &columns = ui_widget->elementColumn();
-    if (columns.count() > 0)
-        tableWidget->setColumnCount(columns.count());
-    for (int i = 0; i< columns.count(); i++) {
+    if (!columns.isEmpty())
+        tableWidget->setColumnCount(columns.size());
+    for (qsizetype i = 0, size = columns.size(); i < size; ++i) {
         DomColumn *c = columns.at(i);
         const DomPropertyHash properties = propertyMap(c->elementProperty());
 
@@ -2193,9 +2157,9 @@ void QAbstractFormBuilder::loadTableWidgetExtraInfo(DomWidget *ui_widget, QTable
     }
 
     const auto &rows = ui_widget->elementRow();
-    if (rows.count() > 0)
-        tableWidget->setRowCount(rows.count());
-    for (int i = 0; i< rows.count(); i++) {
+    if (!rows.isEmpty())
+        tableWidget->setRowCount(rows.size());
+    for (qsizetype i = 0, size = rows.size(); i < size; ++i) {
         const DomRow *r = rows.at(i);
         const DomPropertyHash properties = propertyMap(r->elementProperty());
 
@@ -2442,7 +2406,7 @@ void QAbstractFormBuilder::setWorkingDirectory(const QDir &directory)
 */
 DomAction *QAbstractFormBuilder::createDom(QAction *action)
 {
-    if (action->parentWidget() == action->menu() || action->isSeparator())
+    if (action->parent() == action->menu() || action->isSeparator())
         return nullptr;
 
     DomAction *ui_action = new DomAction;
@@ -2460,7 +2424,7 @@ DomAction *QAbstractFormBuilder::createDom(QAction *action)
 
 DomButtonGroup *QAbstractFormBuilder::createDom(QButtonGroup *buttonGroup)
 {
-    if (buttonGroup->buttons().count() == 0) // Empty group left over on form?
+    if (buttonGroup->buttons().isEmpty()) // Empty group left over on form?
         return nullptr;
     DomButtonGroup *domButtonGroup = new DomButtonGroup;
     domButtonGroup->setAttributeName(buttonGroup->objectName());

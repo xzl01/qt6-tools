@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2020 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Assistant of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2020 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "mainwindow.h"
 
@@ -423,7 +398,7 @@ void MainWindow::lookForNewQtDocumentation()
             this, &MainWindow::resetQtDocInfo);
     connect(m_qtDocInstaller, &QtDocInstaller::registerDocumentation,
             this, &MainWindow::registerDocumentation);
-    if (helpEngine.qtDocInfo(QLatin1String("qt")).count() != 2)
+    if (helpEngine.qtDocInfo(QLatin1String("qt")).size() != 2)
         statusBar()->showMessage(tr("Looking for Qt Documentation..."));
     m_qtDocInstaller->installDocs();
 }
@@ -551,16 +526,16 @@ void MainWindow::setupActions()
 
     m_viewMenu->addSeparator();
 
-    m_viewMenu->addAction(tr("Contents"),
-            this, &MainWindow::showContents, QKeySequence(tr("ALT+C")));
-    m_viewMenu->addAction(tr("Index"),
-            this, &MainWindow::showIndex, QKeySequence(tr("ALT+I")));
-    m_viewMenu->addAction(tr("Bookmarks"),
-            this, &MainWindow::showBookmarksDockWidget, QKeySequence(tr("ALT+O")));
-    m_viewMenu->addAction(tr("Search"),
-            this, &MainWindow::showSearch, QKeySequence(tr("ALT+S")));
-    m_viewMenu->addAction(tr("Open Pages"),
-            this, &MainWindow::showOpenPages, QKeySequence(tr("ALT+P")));
+    m_viewMenu->addAction(tr("Contents"), QKeySequence(tr("ALT+C")),
+                          this, &MainWindow::showContents);
+    m_viewMenu->addAction(tr("Index"), QKeySequence(tr("ALT+I")),
+                          this, &MainWindow::showIndex);
+    m_viewMenu->addAction(tr("Bookmarks"), QKeySequence(tr("ALT+O")),
+                          this, &MainWindow::showBookmarksDockWidget);
+    m_viewMenu->addAction(tr("Search"), QKeySequence(tr("ALT+S")),
+                          this, &MainWindow::showSearch);
+    m_viewMenu->addAction(tr("Open Pages"), QKeySequence(tr("ALT+P")),
+                          this, &MainWindow::showOpenPages);
 
     menu = menuBar()->addMenu(tr("&Go"));
     menu->addAction(globalActions->homeAction());
@@ -632,8 +607,8 @@ void MainWindow::setupActions()
     menuBar()->insertMenu(menu->menuAction(), windowMenu);
     windowMenu->addAction(tr("Zoom"),
             this, &QWidget::showMaximized);
-    windowMenu->addAction(tr("Minimize"),
-            this, &QWidget::showMinimized, QKeySequence(tr("Ctrl+M")));
+    windowMenu->addAction(tr("Minimize"), QKeySequence(tr("Ctrl+M")),
+            this, &QWidget::showMinimized);
 #endif
 
     // content viewer connections

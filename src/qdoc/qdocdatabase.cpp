@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdocdatabase.h"
 
@@ -36,6 +11,7 @@
 #include "tree.h"
 
 #include <QtCore/qregularexpression.h>
+#include <stack>
 
 QT_BEGIN_NAMESPACE
 
@@ -297,6 +273,10 @@ void QDocForest::newPrimaryTree(const QString &module)
   other trees, which are all index trees. With relative set
   to 0, the starting point for each index tree is the root
   of the index tree.
+
+  If \a targetPath is resolved successfully but it refers to
+  a \\section title, continue the search, keeping the section
+  title as a fallback if no higher-priority targets are found.
  */
 const Node *QDocForest::findNodeForTarget(QStringList &targetPath, const Node *relative,
                                           Node::Genus genus, QString &ref)
@@ -310,13 +290,20 @@ const Node *QDocForest::findNodeForTarget(QStringList &targetPath, const Node *r
     if (!targetPath.isEmpty())
         target = targetPath.takeFirst();
 
+    TargetRec::TargetType type = TargetRec::Unknown;
+    const Node *tocNode = nullptr;
     for (const auto *tree : searchOrder()) {
-        const Node *n = tree->findNodeForTarget(entityPath, target, relative, flags, genus, ref);
-        if (n)
-            return n;
+        const Node *n = tree->findNodeForTarget(entityPath, target, relative, flags, genus, ref, &type);
+        if (n) {
+            // Targets referring to non-section titles are returned immediately
+            if (type != TargetRec::Contents)
+                return n;
+            if (!tocNode)
+                tocNode = n;
+        }
         relative = nullptr;
     }
-    return nullptr;
+    return tocNode;
 }
 
 /*!
@@ -860,7 +847,7 @@ NodeMultiMap &QDocDatabase::getQmlTypesWithObsoleteMembers()
   have not already been constructed. Returns a reference to
   the map of QML basic types.
  */
-NodeMultiMap &QDocDatabase::getQmlBasicTypes()
+NodeMultiMap &QDocDatabase::getQmlValueTypes()
 {
     if (s_cppClasses.isEmpty() && s_qmlBasicTypes.isEmpty())
         processForest(&QDocDatabase::findAllClasses);
@@ -1119,8 +1106,8 @@ void QDocDatabase::resolveNamespaces()
                     if (nsNode->hadDoc() && nsNode != ns) {
                         ns->doc().location().warning(
                                 QStringLiteral("Namespace %1 documented more than once")
-                                        .arg(nsNode->name()));
-                        nsNode->doc().location().warning(QStringLiteral("...also seen here"));
+                                        .arg(nsNode->name()), QStringLiteral("also seen here: %1")
+                                                .arg(nsNode->doc().location().toString()));
                     }
                 }
             } else if (!indexNamespace) {
@@ -1220,7 +1207,7 @@ const FunctionNode *QDocDatabase::findFunctionNode(const QString &target, const 
 {
     QString signature;
     QString function = target;
-    qsizetype length = target.length();
+    qsizetype length = target.size();
     if (function.endsWith("()"))
         function.chop(2);
     if (function.endsWith(QChar(')'))) {
@@ -1474,7 +1461,7 @@ const Node *QDocDatabase::findNodeForAtom(const Atom *a, const Node *relative, Q
         else if (first.endsWith(QChar(')'))) {
             QString signature;
             QString function = first;
-            qsizetype length = first.length();
+            qsizetype length = first.size();
             if (function.endsWith("()"))
                 function.chop(2);
             if (function.endsWith(QChar(')'))) {
@@ -1519,9 +1506,13 @@ const Node *QDocDatabase::findNodeForAtom(const Atom *a, const Node *relative, Q
 }
 
 /*!
-    Updates navigation (previous/next page links) for pages listed
-    in the TOC, specified by the \c navigation.toctitles configuration
-    variable.
+    Updates navigation (previous/next page links and the navigation parent)
+    for pages listed in the TOC, specified by the \c navigation.toctitles
+    configuration variable.
+
+    if \c navigation.toctitles.inclusive is \c true, include also the TOC
+    page(s) themselves as a 'root' item in the navigation bar (breadcrumbs)
+    that are generated for HTML output.
 */
 void QDocDatabase::updateNavigation()
 {
@@ -1529,23 +1520,33 @@ void QDocDatabase::updateNavigation()
     QList<Tree *> searchOrder = this->searchOrder();
     setLocalSearch();
 
-    const auto tocTitles =
-            Config::instance().getStringList(CONFIG_NAVIGATION +
-                                             Config::dot +
-                                             CONFIG_TOCTITLES);
+    const QString configVar = CONFIG_NAVIGATION +
+                              Config::dot +
+                              CONFIG_TOCTITLES;
+    bool inclusive =
+            Config::instance().getBool(configVar +
+                                       Config::dot +
+                                       CONFIG_INCLUSIVE);
+
+    const auto tocTitles = Config::instance().getStringList(configVar);
 
     for (const auto &tocTitle : tocTitles) {
         if (const auto tocPage = findNodeForTarget(tocTitle, nullptr)) {
             Text body = tocPage->doc().body();
             auto *atom = body.firstAtom();
             std::pair<Node *, Atom *> prev { nullptr, nullptr };
+            std::stack<const Node *> tocStack;
+            tocStack.push(inclusive ? tocPage : nullptr);
             bool inItem = false;
             while (atom) {
                 switch (atom->type()) {
                 case Atom::ListItemLeft:
+                    // Not known if we're going to have a link, push a temporary
+                    tocStack.push(nullptr);
                     inItem = true;
                     break;
                 case Atom::ListItemRight:
+                    tocStack.pop();
                     inItem = false;
                     break;
                 case Atom::Link: {
@@ -1553,6 +1554,9 @@ void QDocDatabase::updateNavigation()
                         break;
                     QString ref;
                     auto page = const_cast<Node *>(findNodeForAtom(atom, nullptr, ref));
+                    // ignore self-references
+                    if (page && page == prev.first)
+                        break;
                     if (page && page->isPageNode()) {
                         if (prev.first) {
                             prev.first->setLink(Node::NextLink,
@@ -1562,6 +1566,19 @@ void QDocDatabase::updateNavigation()
                                           prev.first->title(),
                                           prev.second->linkText());
                         }
+                        if (page == tocPage)
+                            break;
+                        // Find the navigation parent from the stack; we may have null pointers
+                        // for non-link list items, so skip those.
+                        qsizetype popped = 0;
+                        while (tocStack.size() > 1 && !tocStack.top()) {
+                            tocStack.pop();
+                            ++popped;
+                        }
+                        page->setNavigationParent(tocStack.empty() ? nullptr : tocStack.top());
+                        while (--popped > 0)
+                            tocStack.push(nullptr);
+                        tocStack.push(page);
                         prev = { page, atom };
                     }
                 }

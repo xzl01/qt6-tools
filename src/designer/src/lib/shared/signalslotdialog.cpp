@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the Qt Designer of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "signalslotdialog_p.h"
 #include "ui_signalslotdialog.h"
@@ -58,61 +33,19 @@ QT_BEGIN_NAMESPACE
 static const char *signatureRegExp = "^[\\w+_]+\\(([\\w+:]\\*?,?)*\\)$";
 static const char *methodNameRegExp = "^[\\w+_]+$";
 
-static  QStandardItem *createEditableItem(const QString &text)
+static QStandardItem *createEditableItem(const QString &text)
 {
     QStandardItem *rc = new QStandardItem(text);
     rc->setFlags(Qt::ItemIsEnabled|Qt::ItemIsEditable|Qt::ItemIsSelectable);
     return rc;
 }
 
-static  QStandardItem *createDisabledItem(const QString &text)
+static QStandardItem *createDisabledItem(const QString &text)
 {
     QStandardItem *rc = new QStandardItem(text);
     Qt::ItemFlags flags = rc->flags();
     rc->setFlags(flags & ~(Qt::ItemIsEnabled|Qt::ItemIsEditable|Qt::ItemIsSelectable));
     return rc;
-}
-
-static void fakeMethodsFromMetaDataBase(QDesignerFormEditorInterface *core, QObject *o, QStringList &slotList, QStringList &signalList)
-{
-    slotList.clear();
-    signalList.clear();
-    if (qdesigner_internal::MetaDataBase *metaDataBase = qobject_cast<qdesigner_internal::MetaDataBase *>(core->metaDataBase()))
-        if (const qdesigner_internal::MetaDataBaseItem *item = metaDataBase->metaDataBaseItem(o)) {
-            slotList = item->fakeSlots();
-            signalList = item->fakeSignals();
-        }
-}
-
-static void fakeMethodsToMetaDataBase(QDesignerFormEditorInterface *core, QObject *o, const QStringList &slotList, const QStringList &signalList)
-{
-    if (qdesigner_internal::MetaDataBase *metaDataBase = qobject_cast<qdesigner_internal::MetaDataBase *>(core->metaDataBase())) {
-        qdesigner_internal::MetaDataBaseItem *item = metaDataBase->metaDataBaseItem(o);
-        Q_ASSERT(item);
-        item->setFakeSlots(slotList);
-        item->setFakeSignals(signalList);
-    }
-}
-
-static void existingMethodsFromMemberSheet(QDesignerFormEditorInterface *core,
-                                           QObject *o,
-                                           QStringList &slotList, QStringList &signalList)
-{
-    slotList.clear();
-    signalList.clear();
-
-    QDesignerMemberSheetExtension *msheet = qt_extension<QDesignerMemberSheetExtension*>(core->extensionManager(), o);
-    if (!msheet)
-        return;
-
-    for (int i = 0, count = msheet->count(); i < count; ++i)
-        if (msheet->isVisible(i)) {
-            if (msheet->isSlot(i))
-                slotList += msheet->signature(i);
-            else
-                if (msheet->isSignal(i))
-                    signalList += msheet->signature(i);
-        }
 }
 
 namespace {
@@ -175,9 +108,15 @@ namespace {
                   const QStringList &newFakeSlots, const QStringList &newFakeSignals);
 
         void undo() override
-        { fakeMethodsToMetaDataBase(core(), m_object, m_oldFakeSlots, m_oldFakeSignals); }
+        {
+            qdesigner_internal::SignalSlotDialog::fakeMethodsToMetaDataBase(core(), m_object,
+                                                  m_oldFakeSlots, m_oldFakeSignals);
+        }
         void redo() override
-        { fakeMethodsToMetaDataBase(core(), m_object, m_newFakeSlots, m_newFakeSignals); }
+        {
+            qdesigner_internal::SignalSlotDialog::fakeMethodsToMetaDataBase(core(), m_object,
+                                                  m_newFakeSlots, m_newFakeSignals);
+        }
 
     private:
         QObject *m_object;
@@ -510,6 +449,51 @@ bool SignalSlotDialog::editPromotedClass(QDesignerFormEditorInterface *core, con
     item->setFakeSignals(signalData.m_fakeMethods);
 
     return true;
+}
+
+void SignalSlotDialog::fakeMethodsFromMetaDataBase(QDesignerFormEditorInterface *core, QObject *o,
+                                                   QStringList &slotList, QStringList &signalList)
+{
+    slotList.clear();
+    signalList.clear();
+    if (auto *metaDB = qobject_cast<qdesigner_internal::MetaDataBase *>(core->metaDataBase())) {
+        if (const auto *item = metaDB->metaDataBaseItem(o)) {
+            slotList = item->fakeSlots();
+            signalList = item->fakeSignals();
+        }
+    }
+}
+
+void SignalSlotDialog::fakeMethodsToMetaDataBase(QDesignerFormEditorInterface *core, QObject *o,
+                                                 const QStringList &slotList,
+                                                 const QStringList &signalList)
+{
+    if (auto *metaDB = qobject_cast<qdesigner_internal::MetaDataBase *>(core->metaDataBase())) {
+        if (auto *item = metaDB->metaDataBaseItem(o)) {
+            item->setFakeSlots(slotList);
+            item->setFakeSignals(signalList);
+        }
+    }
+}
+
+void SignalSlotDialog::existingMethodsFromMemberSheet(QDesignerFormEditorInterface *core, QObject *o,
+                                                      QStringList &slotList, QStringList &signalList)
+{
+    slotList.clear();
+    signalList.clear();
+
+    auto *msheet = qt_extension<QDesignerMemberSheetExtension*>(core->extensionManager(), o);
+    if (!msheet)
+        return;
+
+    for (qsizetype i = 0, count = msheet->count(); i < count; ++i) {
+        if (msheet->isVisible(i)) {
+            if (msheet->isSlot(i))
+                slotList += msheet->signature(i);
+            else if (msheet->isSignal(i))
+                signalList += msheet->signature(i);
+        }
+    }
 }
 
 }

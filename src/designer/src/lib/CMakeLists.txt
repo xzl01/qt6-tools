@@ -55,7 +55,7 @@ qt_internal_add_module(Designer
         sdk/layoutdecoration.h
         sdk/membersheet.h
         sdk/propertysheet.h
-        sdk/taskmenu.h
+        sdk/taskmenu.cpp sdk/taskmenu.h
         shared/actioneditor.cpp shared/actioneditor_p.h
         shared/actionprovider_p.h
         shared/actionrepository.cpp shared/actionrepository_p.h
@@ -348,6 +348,7 @@ qt_internal_add_resource(Designer "qtgradienteditor"
 )
 set(shared_resource_files
     "shared/defaultgradients.xml"
+    "shared/icon-naming-spec.txt"
     "shared/templates/forms/240x320/Dialog_with_Buttons_Bottom.ui"
     "shared/templates/forms/240x320/Dialog_with_Buttons_Right.ui"
     "shared/templates/forms/320x240/Dialog_with_Buttons_Bottom.ui"

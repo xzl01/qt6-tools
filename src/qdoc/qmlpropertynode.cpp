@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qmlpropertynode.h"
 
@@ -33,6 +8,7 @@
 
 #include <utility>
 #include "qdocdatabase.h"
+#include "utilities.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -53,15 +29,14 @@ QmlPropertyNode::QmlPropertyNode(Aggregate *parent, const QString &name, QString
 
 /*!
   Returns \c true if a QML property or attached property is
-  not read-only. The algorithm for figuring this out is long
-  amd tedious and almost certainly will break. It currently
-  doesn't work for the qmlproperty:
+  not read-only. If the read-only status is not set explicitly
+  using the \\readonly command, QDoc attempts to resolve it
+  from the associated C++ class instantiated by the QML type
+  that this property belongs to.
 
-  \code
-      bool PropertyChanges::explicit,
-  \endcode
-
-  ...because the tokenizer gets confused on \e{explicit}.
+  \note Depending on how the QML type is implemented, this
+  information may not be available to QDoc. If so, add a debug
+  line but do not treat it as a warning.
  */
 bool QmlPropertyNode::isWritable()
 {
@@ -69,26 +44,18 @@ bool QmlPropertyNode::isWritable()
         return !fromFlagValue(readOnly_, false);
 
     QmlTypeNode *qcn = qmlTypeNode();
-    if (qcn) {
-        if (qcn->cppClassRequired()) {
-            if (qcn->classNode()) {
-                PropertyNode *pn = findCorrespondingCppProperty();
-                if (pn)
-                    return pn->isWritable();
-                else
-                    defLocation().warning(
-                            QStringLiteral(
-                                    "No Q_PROPERTY for QML property %1::%2::%3 "
-                                    "in C++ class documented as QML type: "
-                                    "(property not found in the C++ class or its base classes)")
-                                    .arg(logicalModuleName(), qmlTypeName(), name()));
-            } else
-                defLocation().warning(QStringLiteral("No Q_PROPERTY for QML property %1::%2::%3 "
-                                                     "in C++ class documented as QML type: "
-                                                     "(C++ class not specified or not found).")
-                                              .arg(logicalModuleName(), qmlTypeName(), name()));
-        }
-    }
+    if (qcn && qcn->classNode()) {
+        PropertyNode *pn = findCorrespondingCppProperty();
+        if (pn)
+            return pn->isWritable();
+        else
+            qCDebug(lcQdoc).nospace()
+                    << qPrintable(defLocation().toString())
+                    << ": Automatic resolution of QML property attributes failed for "
+                    << name()
+                    << " (Q_PROPERTY not found in the C++ class hierarchy known to QDoc. "
+                    << "Likely, the type is replaced with a private implementation.)";
+}
     return true;
 }
 

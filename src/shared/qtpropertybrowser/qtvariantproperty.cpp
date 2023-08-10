@@ -1,41 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:LGPL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Lesser General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU Lesser
-** General Public License version 3 as published by the Free Software
-** Foundation and appearing in the file LICENSE.LGPL3 included in the
-** packaging of this file. Please review the following information to
-** ensure the GNU Lesser General Public License version 3 requirements
-** will be met: https://www.gnu.org/licenses/lgpl-3.0.html.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 2.0 or (at your option) the GNU General
-** Public license version 3 or any later version approved by the KDE Free
-** Qt Foundation. The licenses are as published by the Free Software
-** Foundation and appearing in the file LICENSE.GPL2 and LICENSE.GPL3
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-2.0.html and
-** https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2016 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qtvariantproperty.h"
 #include "qtpropertymanager.h"
@@ -45,6 +9,7 @@
 #include <QtCore/QDate>
 #include <QtCore/QLocale>
 #include <QtCore/QRegularExpression>
+#include <QtCore/QMap>
 
 #if defined(Q_CC_MSVC)
 #    pragma warning(disable: 4786) /* MS VS 6: truncating debug info after 255 characters */
@@ -431,7 +396,7 @@ void QtVariantPropertyManagerPrivate::slotPropertyInserted(QtProperty *property,
     if (!varParent)
         return;
 
-    QtVariantProperty *varAfter = 0;
+    QtVariantProperty *varAfter = nullptr;
     if (after) {
         varAfter = m_internalToProperty.value(after, 0);
         if (!varAfter)
@@ -1777,7 +1742,7 @@ void QtVariantPropertyManager::initializeProperty(QtProperty *property)
     QMap<int, QtAbstractPropertyManager *>::ConstIterator it =
             d_ptr->m_typeToPropertyManager.find(d_ptr->m_propertyType);
     if (it != d_ptr->m_typeToPropertyManager.constEnd()) {
-        QtProperty *internProp = 0;
+        QtProperty *internProp = nullptr;
         if (!d_ptr->m_creatingSubProperties) {
             QtAbstractPropertyManager *manager = it.value();
             internProp = manager->addProperty();
@@ -1786,7 +1751,7 @@ void QtVariantPropertyManager::initializeProperty(QtProperty *property)
         propertyToWrappedProperty()->insert(varProp, internProp);
         if (internProp) {
             const auto children = internProp->subProperties();
-            QtVariantProperty *lastProperty = 0;
+            QtVariantProperty *lastProperty = nullptr;
             for (QtProperty *child : children) {
                 QtVariantProperty *prop = d_ptr->createSubProperty(varProp, lastProperty, child);
                 lastProperty = prop ? prop : lastProperty;

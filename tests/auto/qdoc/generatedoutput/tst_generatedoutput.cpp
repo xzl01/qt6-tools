@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 #include <QProcess>
 #include <QTemporaryDir>
 #include <QDirIterator>
@@ -60,6 +35,7 @@ private slots:
 
     // Output format independent tests
     void autoNavigation();
+    void tocBreadcrumbs();
     void examplesManifestXmlAndQhp();
     void ignoresinceVariable();
     void templateParameters();
@@ -79,6 +55,7 @@ private slots:
     void properties();
     void testTagFile();
     void testGlobalFunctions();
+    void proxyPage();
 
 private:
     QScopedPointer<QTemporaryDir> m_outputDir;
@@ -128,22 +105,23 @@ void tst_generatedOutput::runQDocProcess(const QStringList &arguments)
     QProcess qdocProcess;
     qdocProcess.setProgram(m_qdoc);
     qdocProcess.setArguments(arguments);
+
+    auto failQDoc = [&](QProcess::ProcessError) {
+        QFAIL(qPrintable(QStringLiteral("Running qdoc failed with exit code %1: %2")
+                .arg(qdocProcess.exitCode()).arg(qdocProcess.errorString())));
+    };
+    QObject::connect(&qdocProcess, &QProcess::errorOccurred, failQDoc);
+
     qdocProcess.start();
     qdocProcess.waitForFinished();
-
     if (qdocProcess.exitCode() == 0)
         return;
 
-    QString output = qdocProcess.readAllStandardOutput();
     QString errors = qdocProcess.readAllStandardError();
-
-    qInfo() << "QDoc exited with exit code" << qdocProcess.exitCode();
-    if (output.size() > 0)
-        qInfo().nospace() << "Received output:\n" << qUtf8Printable(output);
-    if (errors.size() > 0)
+    if (!errors.isEmpty())
         qInfo().nospace() << "Received errors:\n" << qUtf8Printable(errors);
-
-    QFAIL("Running QDoc failed. See output above.");
+    if (!QTest::currentTestFailed())
+        failQDoc(QProcess::UnknownError);
 }
 
 void tst_generatedOutput::compareLineByLine(const QStringList &expectedFiles)
@@ -194,12 +172,12 @@ void tst_generatedOutput::testAndCompare(const char *input, const char *outNames
 
     if (m_regen) {
         QVERIFY(m_expectedDir.mkpath(m_expectedDir.path()));
-        for (const auto &file : qAsConst(expectedOuts)) {
+        for (const auto &file : std::as_const(expectedOuts)) {
             QFileInfo fileInfo(m_expectedDir.filePath(file));
             fileInfo.dir().remove(fileInfo.fileName()); // Allowed to fail
             QVERIFY(m_expectedDir.mkpath(fileInfo.dir().path()));
-            QVERIFY(QFile::copy(m_outputDir->filePath(file),
-                                fileInfo.filePath()));
+            QVERIFY2(QFile::copy(m_outputDir->filePath(file), fileInfo.filePath()),
+                     qPrintable(QStringLiteral("Failed to copy '%1'").arg(file)));
         }
         QSKIP("Regenerated expected output only.");
     }
@@ -356,6 +334,16 @@ void tst_generatedOutput::autoNavigation()
                    "qdoctests-qdocfileoutput-exhaustive.html "
                    "toc.html");
 }
+
+void tst_generatedOutput::tocBreadcrumbs()
+{
+    testAndCompare("testdata/configs/tocbreadcrumbs.qdocconf",
+                   "tocbreadcrumbs/qdoctests-qdocfileoutput.html "
+                   "tocbreadcrumbs/qdoctests-qdocfileoutput-linking.html "
+                   "tocbreadcrumbs/qdoctests-qdocfileoutput-exhaustive.html "
+                   "tocbreadcrumbs/toc-test.html");
+}
+
 
 void tst_generatedOutput::examplesManifestXmlAndQhp()
 {
@@ -517,6 +505,7 @@ void tst_generatedOutput::properties()
     testAndCompare("testdata/configs/properties.qdocconf",
                    "properties/testqdoc-testderived.html "
                    "properties/testqdoc-testderived-members.html "
+                   "properties/qml-thetype.html "
                    "properties/testcpp.index "
                    "properties-docbook/testqdoc-testderived.xml",
                    m_extraParams.toLatin1().data());
@@ -530,6 +519,13 @@ void tst_generatedOutput::testTagFile()
 void tst_generatedOutput::testGlobalFunctions()
 {
     testAndCompare("testdata/configs/testglobals.qdocconf", "globals.html");
+}
+
+void tst_generatedOutput::proxyPage()
+{
+    testAndCompare("testdata/proxypage/proxypage.qdocconf",
+                   "proxypage/stdpair-proxy.html "
+                   "proxypage-docbook/stdpair-proxy.xml");
 }
 
 int main(int argc, char *argv[])

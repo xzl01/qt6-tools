@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "qdocindexfiles.h"
 
@@ -146,15 +121,16 @@ void QDocIndexFiles::readIndexFile(const QString &path)
 
     QXmlStreamAttributes attrs = reader.attributes();
 
-    // Generate a relative URL between the install dir and the index file
-    // when the -installdir command line option is set.
-    QString indexUrl;
-    if (Config::installDir.isEmpty()) {
-        indexUrl = attrs.value(QLatin1String("url")).toString();
-    } else {
-        // Use a fake directory, since we will copy the output to a sub directory of
-        // installDir when using "make install". This is just for a proper relative path.
-        // QDir installDir(path.section('/', 0, -3) + "/outputdir");
+    QString indexUrl {attrs.value(QLatin1String("url")).toString()};
+
+    // Decide how we link to nodes loaded from this index file:
+    // If building a set that will be installed AND the URL of
+    // the dependency is identical to ours, assume that also
+    // the dependent html files are available under the same
+    // directory tree. Otherwise, link using the full index URL.
+    if (!Config::installDir.isEmpty() && indexUrl == Config::instance().getString(CONFIG_URL)) {
+        // Generate a relative URL between the install dir and the index file
+        // when the -installdir command line option is set.
         QDir installDir(path.section('/', 0, -3) + '/' + Generator::outputSubdir());
         indexUrl = installDir.relativeFilePath(path).section('/', 0, -2);
     }
@@ -251,7 +227,7 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
             QString bases = attributes.value(QLatin1String("bases")).toString();
             if (!bases.isEmpty())
                 m_basesList.append(
-                        QPair<ClassNode *, QString>(static_cast<ClassNode *>(node), bases));
+                        std::pair<ClassNode *, QString>(static_cast<ClassNode *>(node), bases));
         }
         if (!indexUrl.isEmpty())
             location = Location(indexUrl + QLatin1Char('/') + name.toLower() + ".html");
@@ -314,8 +290,9 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
         else if (!indexUrl.isNull())
             location = Location(name);
         node = qmlTypeNode;
-    } else if (elementName == QLatin1String("qmlbasictype")) {
-        auto *qbtn = new QmlBasicTypeNode(parent, name);
+    } else if (elementName == QLatin1String("qmlvaluetype")
+               || elementName == QLatin1String("qmlbasictype")) {
+        auto *qbtn = new QmlValueTypeNode(parent, name);
         qbtn->setTitle(attributes.value(QLatin1String("title")).toString());
         if (attributes.hasAttribute(QLatin1String("location")))
             name = attributes.value("location").toString();
@@ -325,7 +302,7 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
             location = Location(name);
         node = qbtn;
     } else if (elementName == QLatin1String("jsbasictype")) {
-        auto *qbtn = new QmlBasicTypeNode(parent, name);
+        auto *qbtn = new QmlValueTypeNode(parent, name);
         qbtn->setGenus(Node::JS);
         qbtn->setTitle(attributes.value(QLatin1String("title")).toString());
         if (attributes.hasAttribute(QLatin1String("location")))
@@ -506,8 +483,10 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
         if (attributes.value(QLatin1String("attached")) == QLatin1String("true"))
             attached = true;
         auto *fn = new FunctionNode(metaness, parent, name, attached);
+
+        fn->setReturnType(attributes.value(QLatin1String("type")).toString());
+
         if (fn->isCppNode()) {
-            fn->setReturnType(attributes.value(QLatin1String("type")).toString());
             fn->setVirtualness(attributes.value(QLatin1String("virtual")).toString());
             fn->setConst(attributes.value(QLatin1String("const")) == QLatin1String("true"));
             fn->setStatic(attributes.value(QLatin1String("static")) == QLatin1String("true"));
@@ -528,28 +507,29 @@ void QDocIndexFiles::readIndexSection(QXmlStreamReader &reader, Node *current,
                 fn->setOverloadNumber(attributes.value(QLatin1String("overload-number")).toUInt());
             else
                 fn->setOverloadNumber(0);
-            /*
-              Note: The "signature" attribute was written to the
-              index file, but it is not read back in. That is ok
-              because we reconstruct the parameter list and the
-              return type, from which the signature was built in
-              the first place and from which it can be rebuilt.
-            */
-            while (reader.readNextStartElement()) {
-                QXmlStreamAttributes childAttributes = reader.attributes();
-                if (reader.name() == QLatin1String("parameter")) {
-                    // Do not use the default value for the parameter; it is not
-                    // required, and has been known to cause problems.
-                    QString type = childAttributes.value(QLatin1String("type")).toString();
-                    QString name = childAttributes.value(QLatin1String("name")).toString();
-                    fn->parameters().append(type, name);
-                } else if (reader.name() == QLatin1String("keyword")) {
-                    insertTarget(TargetRec::Keyword, childAttributes, fn);
-                } else if (reader.name() == QLatin1String("target")) {
-                    insertTarget(TargetRec::Target, childAttributes, fn);
-                }
-                reader.skipCurrentElement();
+        }
+
+        /*
+            Note: The "signature" attribute was written to the
+            index file, but it is not read back in. That is ok
+            because we reconstruct the parameter list and the
+            return type, from which the signature was built in
+            the first place and from which it can be rebuilt.
+        */
+        while (reader.readNextStartElement()) {
+            QXmlStreamAttributes childAttributes = reader.attributes();
+            if (reader.name() == QLatin1String("parameter")) {
+                // Do not use the default value for the parameter; it is not
+                // required, and has been known to cause problems.
+                QString type = childAttributes.value(QLatin1String("type")).toString();
+                QString name = childAttributes.value(QLatin1String("name")).toString();
+                fn->parameters().append(type, name);
+            } else if (reader.name() == QLatin1String("keyword")) {
+                insertTarget(TargetRec::Keyword, childAttributes, fn);
+            } else if (reader.name() == QLatin1String("target")) {
+                insertTarget(TargetRec::Target, childAttributes, fn);
             }
+            reader.skipCurrentElement();
         }
 
         node = fn;
@@ -728,7 +708,7 @@ void QDocIndexFiles::insertTarget(TargetRec::TargetType type,
  */
 void QDocIndexFiles::resolveIndex()
 {
-    for (const auto &pair : qAsConst(m_basesList)) {
+    for (const auto &pair : std::as_const(m_basesList)) {
         const QStringList bases = pair.second.split(QLatin1Char(','));
         for (const auto &base : bases) {
             QStringList basePath = base.split(QString("::"));
@@ -887,8 +867,8 @@ bool QDocIndexFiles::generateIndexSection(QXmlStreamWriter &writer, Node *node,
             logicalModuleName = node->logicalModule()->logicalModuleName();
         qmlFullBaseName = node->qmlFullBaseName();
         break;
-    case Node::QmlBasicType:
-        nodeName = "qmlbasictype";
+    case Node::QmlValueType:
+        nodeName = "qmlvaluetype";
         break;
     case Node::JsBasicType:
         nodeName = "jsbasictype";
@@ -1374,13 +1354,18 @@ void QDocIndexFiles::generateFunctionSection(QXmlStreamWriter &writer, FunctionN
             writer.writeAttribute("associated-property",
                                   associatedProperties.join(QLatin1Char(',')));
         }
-        writer.writeAttribute("type", fn->returnType());
+    }
+
+    writer.writeAttribute("type", fn->returnType());
+
+    if (fn->isCppNode()) {
         if (!brief.isEmpty())
             writer.writeAttribute("brief", brief);
+
         /*
-          Note: The "signature" attribute is written to the
-          index file, but it is not read back in by qdoc. However,
-          we need it for the webxml generator.
+        Note: The "signature" attribute is written to the
+        index file, but it is not read back in by qdoc. However,
+        we need it for the webxml generator.
         */
         QString signature = fn->signature(false, false);
         // 'const' is already part of FunctionNode::signature()
@@ -1395,15 +1380,15 @@ void QDocIndexFiles::generateFunctionSection(QXmlStreamWriter &writer, FunctionN
         QStringList groups = m_qdb->groupNamesForNode(fn);
         if (!groups.isEmpty())
             writer.writeAttribute("groups", groups.join(QLatin1Char(',')));
+    }
 
-        for (int i = 0; i < fn->parameters().count(); ++i) {
-            const Parameter &parameter = fn->parameters().at(i);
-            writer.writeStartElement("parameter");
-            writer.writeAttribute("type", parameter.type());
-            writer.writeAttribute("name", parameter.name());
-            writer.writeAttribute("default", parameter.defaultValue());
-            writer.writeEndElement(); // parameter
-        }
+    for (int i = 0; i < fn->parameters().count(); ++i) {
+        const Parameter &parameter = fn->parameters().at(i);
+        writer.writeStartElement("parameter");
+        writer.writeAttribute("type", parameter.type());
+        writer.writeAttribute("name", parameter.name());
+        writer.writeAttribute("default", parameter.defaultValue());
+        writer.writeEndElement(); // parameter
     }
 
     // Append to the section if the callback object was set

@@ -1,29 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the documentation of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:FDL$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU Free Documentation License Usage
-** Alternatively, this file may be used under the terms of the GNU Free
-** Documentation License version 1.3 as published by the Free Software
-** Foundation and appearing in the file included in the packaging of
-** this file. Please review the following information to ensure
-** the GNU Free Documentation License version 1.3 requirements
-** will be met: https://www.gnu.org/licenses/fdl-1.3.html.
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GFDL-1.3-no-invariants-only
 
 /*!
     \page qdoc-warnings.html
@@ -123,9 +99,17 @@
     Refer to the \l{instantiates-command}{\\instantiates} command in the
     \l {QDoc manual}.
 
+    QDoc issues this warning if it failed to locate the documentation for the
+     C++ class <ClassName>. Either the class is undocumented, it is marked
+    \l {internal-command}{\\internal}, or it originates from another
+    documentation module and QDoc did not locate an index file for the
+    corresponding dependency.
+
+    See also \l {depends-variable}{depends}.
+
     \section1 Cannot tie this documentation to anything
 
-    QDoc found a \\beginqdoc ... \\endqdoc comment, with no \l{Topic Commands}{topic command}, that was
+    QDoc found a \beginqdoc ... \endqdoc comment, with no \l{Topic Commands}{topic command}, that was
     not immediately followed by a class, function or property definition.
     It thus does not know what the comment documents.
 
@@ -136,11 +120,11 @@
     Very similar to \l {Cannot tie this documentation to anything}, but
     specific to comments that are not in C++ or QML files.
 
-    \section1 <name> documented more than once (The previous doc is here)
+    \section1 <name> documented more than once
 
     QDoc issues this warning when it finds two comments that
-    document the same item. The warning comes in two parts,
-    one giving the later occurrence, the other the first.
+    document the same item. The location of the previously seen
+    comment is provided in warning details.
 
     For example, you see this warning when a function has a documentation
     comment preceding its definition, and a separate \\fn comment
@@ -710,12 +694,11 @@
     Without them, QDoc cannot locate the index files of any dependencies
     defined with the 'depends' configuration variable.
 
-    \section1 Overrides a previous doc (The previous doc is here)
+    \section1 Overrides a previous doc
 
-    When QDoc finds two comments that appear to describe the same
-    entity, it issues this warning and tells you where to find the
-    other comment. The warning comes in two parts, one giving the
-    later occurrence, the other the first.
+    QDoc issues this warning when it finds two comments that appear to
+    describe the same entity. The location of the previously seen
+    comment is provided in warning details.
 
     \section1 Unrecognized list style <name>
 

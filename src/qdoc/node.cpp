@@ -1,30 +1,5 @@
-/****************************************************************************
-**
-** Copyright (C) 2021 The Qt Company Ltd.
-** Contact: https://www.qt.io/licensing/
-**
-** This file is part of the tools applications of the Qt Toolkit.
-**
-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
-** Commercial License Usage
-** Licensees holding valid commercial Qt licenses may use this file in
-** accordance with the commercial license agreement provided with the
-** Software or, alternatively, in accordance with the terms contained in
-** a written agreement between you and The Qt Company. For licensing terms
-** and conditions see https://www.qt.io/terms-conditions. For further
-** information use the contact form at https://www.qt.io/contact-us.
-**
-** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU
-** General Public License version 3 as published by the Free Software
-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
-** included in the packaging of this file. Please review the following
-** information to ensure the GNU General Public License requirements will
-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
-**
-** $QT_END_LICENSE$
-**
-****************************************************************************/
+// Copyright (C) 2021 The Qt Company Ltd.
+// SPDX-License-Identifier: LicenseRef-Qt-Commercial OR GPL-3.0-only WITH Qt-GPL-exception-1.0
 
 #include "node.h"
 
@@ -110,7 +85,8 @@ void Node::initialize()
     goals.insert("qmlsignal", Node::Function);
     goals.insert("qmlsignalhandler", Node::Function);
     goals.insert("qmlmethod", Node::Function);
-    goals.insert("qmlbasictype", Node::QmlBasicType);
+    goals.insert("qmlvaluetype", Node::QmlValueType);
+    goals.insert("qmlbasictype", Node::QmlValueType); // deprecated!
     goals.insert("sharedcomment", Node::SharedComment);
     goals.insert("collection", Node::Collection);
 }
@@ -138,7 +114,7 @@ bool Node::changeType(NodeType from, NodeType to)
         case QmlType:
         case QmlModule:
         case QmlProperty:
-        case QmlBasicType:
+        case QmlValueType:
             setGenus(Node::QML);
             break;
         case JsType:
@@ -673,8 +649,8 @@ bool Node::match(const QList<int> &types) const
 void Node::setDoc(const Doc &doc, bool replace)
 {
     if (!m_doc.isEmpty() && !replace && !doc.isMarkedReimp()) {
-        doc.location().warning(QStringLiteral("Overrides a previous doc"));
-        m_doc.location().warning(QStringLiteral("(The previous doc is here)"));
+        doc.location().warning(QStringLiteral("Overrides a previous doc"),
+                QStringLiteral("from here: %1").arg(m_doc.location().toString()));
     }
     m_doc = doc;
 }
@@ -786,7 +762,7 @@ Node::PageType Node::getPageType(Node::NodeType t)
     case Node::Variable:
     case Node::QmlType:
     case Node::QmlProperty:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
     case Node::JsType:
     case Node::JsProperty:
     case Node::JsBasicType:
@@ -836,7 +812,7 @@ Node::Genus Node::getGenus(Node::NodeType t)
     case Node::QmlType:
     case Node::QmlModule:
     case Node::QmlProperty:
-    case Node::QmlBasicType:
+    case Node::QmlValueType:
         return Node::QML;
     case Node::JsType:
     case Node::JsModule:
@@ -931,7 +907,7 @@ QString Node::nodeTypeString(NodeType t)
 
     case QmlType:
         return QLatin1String("QML type");
-    case QmlBasicType:
+    case QmlValueType:
         return QLatin1String("QML basic type");
     case QmlModule:
         return QLatin1String("QML module");
@@ -1012,7 +988,7 @@ bool Node::fromFlagValue(FlagValue fv, bool defaultValue)
  */
 void Node::setLink(LinkType linkType, const QString &link, const QString &desc)
 {
-    QPair<QString, QString> linkPair;
+    std::pair<QString, QString> linkPair;
     linkPair.first = link;
     linkPair.second = desc;
     m_linkMap[linkType] = linkPair;
@@ -1265,59 +1241,6 @@ QString Node::fullDocumentName() const
     return pieces.join(concatenator);
 }
 
-/*!
-  Find the module (Qt Core, Qt GUI, etc.) to which the class belongs.
-  We do this by obtaining the full path to the header file's location
-  and examine everything between "src/" and the filename. This is
-  semi-dirty because we are assuming a particular directory structure.
-
-  This function is only really useful if the class's module has not
-  been defined in the header file with a QT_MODULE macro or with an
-  \inmodule command in the documentation.
- */
-QString Node::physicalModuleName() const
-{
-    if (!m_physicalModuleName.isEmpty())
-        return m_physicalModuleName;
-
-    QString path = location().filePath();
-    QString pattern = QString("src") + QDir::separator();
-    qsizetype start = path.lastIndexOf(pattern);
-
-    if (start == -1)
-        return QString();
-
-    QString moduleDir = path.mid(start + pattern.size());
-    qsizetype finish = moduleDir.indexOf(QDir::separator());
-
-    if (finish == -1)
-        return QString();
-
-    QString physicalModuleName = moduleDir.left(finish);
-
-    if (physicalModuleName == QLatin1String("corelib"))
-        return QLatin1String("QtCore");
-    else if (physicalModuleName == QLatin1String("uitools"))
-        return QLatin1String("QtUiTools");
-    else if (physicalModuleName == QLatin1String("gui"))
-        return QLatin1String("QtGui");
-    else if (physicalModuleName == QLatin1String("network"))
-        return QLatin1String("QtNetwork");
-    else if (physicalModuleName == QLatin1String("opengl"))
-        return QLatin1String("QtOpenGL");
-    else if (physicalModuleName == QLatin1String("svg"))
-        return QLatin1String("QtSvg");
-    else if (physicalModuleName == QLatin1String("sql"))
-        return QLatin1String("QtSql");
-    else if (physicalModuleName == QLatin1String("qtestlib"))
-        return QLatin1String("QtTest");
-    else if (moduleDir.contains("webkit"))
-        return QLatin1String("QtWebKit");
-    else if (physicalModuleName == QLatin1String("xml"))
-        return QLatin1String("QtXml");
-    else
-        return QString();
-}
 void Node::setDeprecatedSince(const QString &sinceVersion)
 {
     if (!m_deprecatedSince.isEmpty())
@@ -1615,7 +1538,7 @@ void Node::setDeprecatedSince(const QString &sinceVersion)
   \c false. I don't know what the tag is used for.
  */
 
-/*! \fn const QMap<LinkType, QPair<QString, QString> > &Node::links() const
+/*! \fn const QMap<LinkType, std::pair<QString, QString> > &Node::links() const
   Returns a reference to this node's link map. The link map should
   probably be moved to the PageNode, because it contains links to the
   start page, next page, previous page, and contents page, and these
