@@ -1,35 +1,6 @@
-#=============================================================================
 # Copyright (C) 2020 The Qt Company Ltd.
 # Copyright 2005-2011 Kitware, Inc.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-#
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of Kitware, Inc. nor the names of its
-#   contributors may be used to endorse or promote products derived
-#   from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#=============================================================================
+# SPDX-License-Identifier: BSD-3-Clause
 
 include(CMakeParseArguments)
 
@@ -68,6 +39,7 @@ function(qt6_create_translation _qm_files)
     if(NOT EXISTS "${stamp_file_dir}")
         file(MAKE_DIRECTORY "${stamp_file_dir}")
     endif()
+    set(stamp_files "")
     foreach(_ts_file ${_my_tsfiles})
         get_filename_component(_ts_name ${_ts_file} NAME)
         if(_my_sources)
@@ -95,7 +67,14 @@ function(qt6_create_translation _qm_files)
 
           file(WRITE ${_ts_lst_file} "${_lst_file_srcs}")
         endif()
-        set(stamp_file "${stamp_file_dir}/${_ts_name}.stamp")
+        file(RELATIVE_PATH _ts_relative_path ${CMAKE_CURRENT_SOURCE_DIR} ${_ts_file})
+        string(REPLACE "../" "__/" _ts_relative_path "${_ts_relative_path}")
+        set(stamp_file "${stamp_file_dir}/${_ts_relative_path}.stamp")
+        list(APPEND stamp_files ${stamp_file})
+        get_filename_component(full_stamp_file_dir "${stamp_file}" DIRECTORY)
+        if(NOT EXISTS "${full_stamp_file_dir}")
+            file(MAKE_DIRECTORY "${full_stamp_file_dir}")
+        endif()
         add_custom_command(OUTPUT ${stamp_file}
             COMMAND ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate
             ARGS ${_lupdate_options} "@${_ts_lst_file}" -ts ${_ts_file}
@@ -103,22 +82,22 @@ function(qt6_create_translation _qm_files)
             DEPENDS ${_dependencies}
             VERBATIM)
     endforeach()
-    qt6_add_translation(${_qm_files} __QT_INTERNAL_DEPEND_ON_TIMESTAMP_FILE ${_my_tsfiles})
+    qt6_add_translation(${_qm_files} ${_my_tsfiles} __QT_INTERNAL_TIMESTAMP_FILES ${stamp_files})
     set(${_qm_files} ${${_qm_files}} PARENT_SCOPE)
 endfunction()
 
 function(qt6_add_translation _qm_files)
-    set(options __QT_INTERNAL_DEPEND_ON_TIMESTAMP_FILE)
+    set(options)
     set(oneValueArgs)
-    set(multiValueArgs OPTIONS)
+    set(multiValueArgs OPTIONS __QT_INTERNAL_TIMESTAMP_FILES)
 
     cmake_parse_arguments(_LRELEASE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     set(_lrelease_files ${_LRELEASE_UNPARSED_ARGUMENTS})
 
+    set(idx 0)
     foreach(_current_FILE ${_lrelease_files})
         get_filename_component(_abs_FILE ${_current_FILE} ABSOLUTE)
         get_filename_component(qm ${_abs_FILE} NAME)
-        set(ts_stamp_file "${CMAKE_CURRENT_BINARY_DIR}/.lupdate/${qm}.stamp")
         # everything before the last dot has to be considered the file name (including other dots)
         string(REGEX REPLACE "\\.[^.]*$" "" FILE_NAME ${qm})
         get_source_file_property(output_location ${_abs_FILE} OUTPUT_LOCATION)
@@ -129,8 +108,9 @@ function(qt6_add_translation _qm_files)
             set(qm "${CMAKE_CURRENT_BINARY_DIR}/${FILE_NAME}.qm")
         endif()
 
-        if(_LRELEASE___QT_INTERNAL_DEPEND_ON_TIMESTAMP_FILE)
-            set(qm_dep "${ts_stamp_file}")
+        if(_LRELEASE___QT_INTERNAL_TIMESTAMP_FILES)
+            list(GET _LRELEASE___QT_INTERNAL_TIMESTAMP_FILES ${idx} qm_dep)
+            math(EXPR idx "${idx} + 1")
         else()
             set(qm_dep "${_abs_FILE}")
         endif()
@@ -176,7 +156,8 @@ function(qt6_add_lupdate target)
     if(arg_SOURCES)
         qt_internal_make_paths_absolute(sources "${arg_SOURCES}")
     else()
-        set(sources "$<TARGET_PROPERTY:${target},SOURCES>")
+        set(exclude_regex "\\.ts$")
+        set(sources "$<FILTER:$<TARGET_PROPERTY:${target},SOURCES>,EXCLUDE,${exclude_regex}>")
     endif()
 
     qt_internal_make_paths_absolute(ts_files "${arg_TS_FILES}")
@@ -234,29 +215,40 @@ function(qt6_add_lrelease target)
     qt_internal_make_paths_absolute(ts_files "${arg_TS_FILES}")
 
     _qt_internal_get_tool_wrapper_script_path(tool_wrapper)
-    set(lupdate_command
-        COMMAND
-            "${tool_wrapper}"
-            $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lupdate>)
     set(lrelease_command
         COMMAND
             "${tool_wrapper}"
             $<TARGET_FILE:${QT_CMAKE_EXPORT_NAMESPACE}::lrelease>)
 
     set(qm_files "")
+    set(supported_languages "")
     foreach(ts_file ${ts_files})
         if(NOT EXISTS "${ts_file}")
             message(WARNING "Translation file '${ts_file}' does not exist. "
                 "Consider building the target '${target}_lupdate' to create an initial "
                 "version of that file.")
 
-            # Provide a command that creates an initial .ts file with the right language set.
-            # The language is guessed by lupdate from the file name.
-            add_custom_command(OUTPUT ${ts_file}
-                ${lupdate_command} -ts ${ts_file}
-                DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lupdate
-                VERBATIM)
+            # Write an initial .ts file that can be read by lrelease and updated by lupdate.
+            file(WRITE "${ts_file}"
+                [[<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS>
+<TS/>
+]])
         endif()
+
+        if(APPLE)
+            execute_process(COMMAND /usr/bin/xmllint --xpath "string(/TS/@language)" ${ts_file}
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                OUTPUT_VARIABLE language_code
+                ERROR_VARIABLE xmllint_error)
+            if(language_code AND NOT xmllint_error)
+                list(APPEND supported_languages "${language_code}")
+            else()
+                message(WARNING "Failed to resolve language code for ${ts_file}. "
+                    "Please update CFBundleLocalizations in your Info.plist manually.")
+            endif()
+        endif()
+
         get_filename_component(qm ${ts_file} NAME_WLE)
         string(APPEND qm ".qm")
         get_source_file_property(output_location ${ts_file} OUTPUT_LOCATION)
@@ -274,6 +266,21 @@ function(qt6_add_lrelease target)
             ${lrelease_command} ${arg_OPTIONS} ${ts_file} -qm ${qm}
             DEPENDS ${QT_CMAKE_EXPORT_NAMESPACE}::lrelease "${ts_file}"
             VERBATIM)
+
+        # Mark file as GENERATED, so that calling _qt_internal_expose_deferred_files_to_ide
+        # doesn't cause an error at generation time saying "Cannot find source file:" when
+        # qt6_add_lrelease is called from a subdirectory different than the target.
+        # The issue happend when the user project called cmake_minimum_required(VERSION)
+        # with a version less than 3.20 or set the CMP0118 policy value to OLD.
+        set(scope_args)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.18")
+            set(scope_args TARGET_DIRECTORY ${target})
+        endif()
+        set_source_files_properties(${qm}
+            ${scope_args}
+            PROPERTIES GENERATED TRUE
+        )
+
         list(APPEND qm_files "${qm}")
 
         # QTBUG-103470: Save the target responsible for driving the build of the custom command
@@ -288,6 +295,12 @@ function(qt6_add_lrelease target)
             _qt_resource_target_dependency "${target}_lrelease"
         )
     endforeach()
+
+    if(APPLE)
+        set_property(TARGET "${target}" APPEND PROPERTY
+            _qt_apple_supported_languages "${supported_languages}"
+        )
+    endif()
 
     add_custom_target(${target}_lrelease DEPENDS ${qm_files})
     if(NOT arg_NO_TARGET_DEPENDENCY)

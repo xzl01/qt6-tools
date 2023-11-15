@@ -13,8 +13,8 @@
 
 QT_BEGIN_NAMESPACE
 
-static const char *PlainTextDialogC = "PlainTextDialog";
-static const char *Geometry = "Geometry";
+static const char PlainTextDialogC[] = "PlainTextDialog";
+static const char PlainTextEditorGeometryC[] = "Geometry";
 
 
 namespace qdesigner_internal {
@@ -25,7 +25,6 @@ PlainTextEditorDialog::PlainTextEditorDialog(QDesignerFormEditorInterface *core,
     m_core(core)
 {
     setWindowTitle(tr("Edit text"));
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
     QVBoxLayout *vlayout = new QVBoxLayout(this);
     vlayout->addWidget(m_editor);
@@ -38,10 +37,10 @@ PlainTextEditorDialog::PlainTextEditorDialog(QDesignerFormEditorInterface *core,
     vlayout->addWidget(buttonBox);
 
     QDesignerSettingsInterface *settings = core->settingsManager();
-    settings->beginGroup(QLatin1String(PlainTextDialogC));
+    settings->beginGroup(QLatin1StringView(PlainTextDialogC));
 
-    if (settings->contains(QLatin1String(Geometry)))
-        restoreGeometry(settings->value(QLatin1String(Geometry)).toByteArray());
+    if (settings->contains(QLatin1StringView(PlainTextEditorGeometryC)))
+        restoreGeometry(settings->value(QLatin1StringView(PlainTextEditorGeometryC)).toByteArray());
 
     settings->endGroup();
 }
@@ -49,9 +48,9 @@ PlainTextEditorDialog::PlainTextEditorDialog(QDesignerFormEditorInterface *core,
 PlainTextEditorDialog::~PlainTextEditorDialog()
 {
     QDesignerSettingsInterface *settings = m_core->settingsManager();
-    settings->beginGroup(QLatin1String(PlainTextDialogC));
+    settings->beginGroup(QLatin1StringView(PlainTextDialogC));
 
-    settings->setValue(QLatin1String(Geometry), saveGeometry());
+    settings->setValue(QLatin1StringView(PlainTextEditorGeometryC), saveGeometry());
     settings->endGroup();
 }
 

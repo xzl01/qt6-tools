@@ -1,4 +1,5 @@
-# Generated from help.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
 ## Help Module:
@@ -32,7 +33,6 @@ qt_internal_add_module(Help
         QHELP_LIB
     LIBRARIES
         Qt::CorePrivate
-        Qt::Network
     PUBLIC_LIBRARIES
         Qt::Core
         Qt::Gui

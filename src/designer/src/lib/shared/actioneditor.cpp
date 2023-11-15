@@ -45,18 +45,19 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qbuffer.h>
 
-Q_DECLARE_METATYPE(QAction*)
-
 QT_BEGIN_NAMESPACE
 
-static const char *actionEditorViewModeKey = "ActionEditorViewMode";
+using namespace Qt::StringLiterals;
 
-static const char *iconPropertyC = "icon";
-static const char *shortcutPropertyC = "shortcut";
-static const char *toolTipPropertyC = "toolTip";
-static const char *checkablePropertyC = "checkable";
-static const char *objectNamePropertyC = "objectName";
-static const char *textPropertyC = "text";
+static const char actionEditorViewModeKey[] = "ActionEditorViewMode";
+
+static const char iconPropertyC[] = "icon";
+static const char shortcutPropertyC[] = "shortcut";
+static const char menuRolePropertyC[] = "menuRole";
+static const char toolTipPropertyC[] = "toolTip";
+static const char checkablePropertyC[] = "checkable";
+static const char objectNamePropertyC[] = "objectName";
+static const char textPropertyC[] = "text";
 
 namespace qdesigner_internal {
 //--------  ActionGroupDelegate
@@ -113,7 +114,8 @@ ActionEditor::ActionEditor(QDesignerFormEditorInterface *core, QWidget *parent, 
     toolbar->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
     l->addWidget(toolbar);
     // edit actions
-    QIcon documentNewIcon = QIcon::fromTheme(QStringLiteral("document-new"), createIconSet(QStringLiteral("filenew.png")));
+    QIcon documentNewIcon = QIcon::fromTheme(u"document-new"_s,
+                                             createIconSet(u"filenew.png"_s));
     m_actionNew->setIcon(documentNewIcon);
     m_actionNew->setEnabled(false);
     connect(m_actionNew, &QAction::triggered, this, &ActionEditor::slotNewAction);
@@ -124,17 +126,20 @@ ActionEditor::ActionEditor(QDesignerFormEditorInterface *core, QWidget *parent, 
 #if QT_CONFIG(clipboard)
     m_actionCut->setEnabled(false);
     connect(m_actionCut, &QAction::triggered, this, &ActionEditor::slotCut);
-    QIcon editCutIcon = QIcon::fromTheme(QStringLiteral("edit-cut"), createIconSet(QStringLiteral("editcut.png")));
+    QIcon editCutIcon = QIcon::fromTheme(u"edit-cut"_s,
+                                         createIconSet(u"editcut.png"_s));
     m_actionCut->setIcon(editCutIcon);
 
     m_actionCopy->setEnabled(false);
     connect(m_actionCopy, &QAction::triggered, this, &ActionEditor::slotCopy);
-    QIcon editCopyIcon = QIcon::fromTheme(QStringLiteral("edit-copy"), createIconSet(QStringLiteral("editcopy.png")));
+    QIcon editCopyIcon = QIcon::fromTheme(u"edit-copy"_s,
+                                          createIconSet(u"editcopy.png"_s));
     m_actionCopy->setIcon(editCopyIcon);
     toolbar->addAction(m_actionCopy);
 
     connect(m_actionPaste, &QAction::triggered, this, &ActionEditor::slotPaste);
-    QIcon editPasteIcon = QIcon::fromTheme(QStringLiteral("edit-paste"), createIconSet(QStringLiteral("editpaste.png")));
+    QIcon editPasteIcon = QIcon::fromTheme(u"edit-paste"_s,
+                                           createIconSet(u"editpaste.png"_s));
     m_actionPaste->setIcon(editPasteIcon);
     toolbar->addAction(m_actionPaste);
 #endif
@@ -144,7 +149,8 @@ ActionEditor::ActionEditor(QDesignerFormEditorInterface *core, QWidget *parent, 
 
     connect(m_actionNavigateToSlot, &QAction::triggered, this, &ActionEditor::navigateToSlotCurrentAction);
 
-    QIcon editDeleteIcon = QIcon::fromTheme(QStringLiteral("edit-delete"), createIconSet(QStringLiteral("editdelete.png")));
+    QIcon editDeleteIcon = QIcon::fromTheme(u"edit-delete"_s,
+                                            createIconSet(u"editdelete.png"_s));
     m_actionDelete->setIcon(editDeleteIcon);
     m_actionDelete->setEnabled(false);
     connect(m_actionDelete, &QAction::triggered, this, &ActionEditor::slotDelete);
@@ -223,9 +229,10 @@ QToolButton *ActionEditor::createConfigureMenuButton(const QString &t, QMenu **p
 {
     QToolButton *configureButton = new QToolButton;
     QAction *configureAction = new QAction(t, configureButton);
-    QIcon configureIcon = QIcon::fromTheme(QStringLiteral("document-properties"), createIconSet(QStringLiteral("configure.png")));
+    QIcon configureIcon = QIcon::fromTheme(u"document-properties"_s,
+                                           createIconSet(u"configure.png"_s));
     configureAction->setIcon(configureIcon);
-    QMenu *configureMenu = new QMenu;
+    QMenu *configureMenu = new QMenu(configureButton);
     configureAction->setMenu(configureMenu);
     configureButton->setDefaultAction(configureAction);
     configureButton->setPopupMode(QToolButton::InstantPopup);
@@ -381,7 +388,7 @@ void ActionEditor::setFilter(const QString &f)
 // Set changed state of icon property,  reset when icon is cleared
 static void refreshIconPropertyChanged(const QAction *action, QDesignerPropertySheetExtension *sheet)
 {
-    sheet->setChanged(sheet->indexOf(QLatin1String(iconPropertyC)), !action->icon().isNull());
+    sheet->setChanged(sheet->indexOf(QLatin1StringView(iconPropertyC)), !action->icon().isNull());
 }
 
 void ActionEditor::manageAction(QAction *action)
@@ -393,8 +400,8 @@ void ActionEditor::manageAction(QAction *action)
         return;
 
     QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), action);
-    sheet->setChanged(sheet->indexOf(QLatin1String(objectNamePropertyC)), true);
-    sheet->setChanged(sheet->indexOf(QLatin1String(textPropertyC)), true);
+    sheet->setChanged(sheet->indexOf(QLatin1StringView(objectNamePropertyC)), true);
+    sheet->setChanged(sheet->indexOf(QLatin1StringView(textPropertyC)), true);
     refreshIconPropertyChanged(action, sheet);
 
     m_actionView->setCurrentIndex(m_actionView->model()->addAction(action));
@@ -437,15 +444,17 @@ void ActionEditor::slotNewAction()
 
         QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), action);
         if (!actionData.toolTip.isEmpty())
-            setInitialProperty(sheet, QLatin1String(toolTipPropertyC), actionData.toolTip);
+            setInitialProperty(sheet, QLatin1StringView(toolTipPropertyC), actionData.toolTip);
 
         if (actionData.checkable)
-            setInitialProperty(sheet, QLatin1String(checkablePropertyC), QVariant(true));
+            setInitialProperty(sheet, QLatin1StringView(checkablePropertyC), QVariant(true));
 
         if (!actionData.keysequence.value().isEmpty())
-            setInitialProperty(sheet, QLatin1String(shortcutPropertyC), QVariant::fromValue(actionData.keysequence));
+            setInitialProperty(sheet, QLatin1StringView(shortcutPropertyC), QVariant::fromValue(actionData.keysequence));
 
-        sheet->setProperty(sheet->indexOf(QLatin1String(iconPropertyC)), QVariant::fromValue(actionData.icon));
+        sheet->setProperty(sheet->indexOf(QLatin1StringView(iconPropertyC)), QVariant::fromValue(actionData.icon));
+
+        setInitialProperty(sheet, QLatin1StringView(menuRolePropertyC), QVariant::fromValue(actionData.menuRole));
 
         AddActionCommand *cmd = new AddActionCommand(formWindow());
         cmd->init(action);
@@ -458,7 +467,7 @@ void ActionEditor::slotNewAction()
 
 static QDesignerFormWindowCommand *setIconPropertyCommand(const PropertySheetIconValue &newIcon, QAction *action, QDesignerFormWindowInterface *fw)
 {
-    const QString iconProperty = QLatin1String(iconPropertyC);
+    const QString iconProperty = QLatin1StringView(iconPropertyC);
     if (newIcon.isEmpty()) {
         ResetPropertyCommand *cmd = new ResetPropertyCommand(fw);
         cmd->init(action, iconProperty);
@@ -474,7 +483,7 @@ static QDesignerFormWindowCommand *setIconPropertyCommand(const PropertySheetIco
 
 static QDesignerFormWindowCommand *setKeySequencePropertyCommand(const PropertySheetKeySequenceValue &ks, QAction *action, QDesignerFormWindowInterface *fw)
 {
-    const QString shortcutProperty = QLatin1String(shortcutPropertyC);
+    const QString shortcutProperty = QLatin1StringView(shortcutPropertyC);
     if (ks.value().isEmpty()) {
         ResetPropertyCommand *cmd = new ResetPropertyCommand(fw);
         cmd->init(action, shortcutProperty);
@@ -523,10 +532,11 @@ void ActionEditor::editAction(QAction *action, int column)
     QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), action);
     oldActionData.name = action->objectName();
     oldActionData.text = action->text();
-    oldActionData.toolTip = textPropertyValue(sheet, QLatin1String(toolTipPropertyC));
-    oldActionData.icon = qvariant_cast<PropertySheetIconValue>(sheet->property(sheet->indexOf(QLatin1String(iconPropertyC))));
+    oldActionData.toolTip = textPropertyValue(sheet, QLatin1StringView(toolTipPropertyC));
+    oldActionData.icon = qvariant_cast<PropertySheetIconValue>(sheet->property(sheet->indexOf(QLatin1StringView(iconPropertyC))));
     oldActionData.keysequence = ActionModel::actionShortCut(sheet);
     oldActionData.checkable =  action->isCheckable();
+    oldActionData.menuRole.value = action->menuRole();
     dlg.setActionData(oldActionData);
 
     switch (column) {
@@ -545,6 +555,9 @@ void ActionEditor::editAction(QAction *action, int column)
     case qdesigner_internal::ActionModel::ToolTipColumn:
         dlg.focusTooltip();
         break;
+    case qdesigner_internal::ActionModel::MenuRoleColumn:
+        dlg.focusMenuRole();
+        break;
     }
 
     if (!dlg.exec())
@@ -558,30 +571,34 @@ void ActionEditor::editAction(QAction *action, int column)
 
     const bool severalChanges = (changeMask != ActionData::TextChanged)      && (changeMask != ActionData::NameChanged)
                              && (changeMask != ActionData::ToolTipChanged)   && (changeMask != ActionData::IconChanged)
-                             && (changeMask != ActionData::CheckableChanged) && (changeMask != ActionData::KeysequenceChanged);
+                             && (changeMask != ActionData::CheckableChanged) && (changeMask != ActionData::KeysequenceChanged)
+                             && (changeMask != ActionData::MenuRoleChanged);
 
     QDesignerFormWindowInterface *fw = formWindow();
     QUndoStack *undoStack = fw->commandHistory();
     if (severalChanges)
-        fw->beginCommand(QStringLiteral("Edit action"));
+        fw->beginCommand(u"Edit action"_s);
 
     if (changeMask & ActionData::NameChanged)
-        undoStack->push(createTextPropertyCommand(QLatin1String(objectNamePropertyC), newActionData.name, action, fw));
+        undoStack->push(createTextPropertyCommand(QLatin1StringView(objectNamePropertyC), newActionData.name, action, fw));
 
     if (changeMask & ActionData::TextChanged)
-        undoStack->push(createTextPropertyCommand(QLatin1String(textPropertyC), newActionData.text, action, fw));
+        undoStack->push(createTextPropertyCommand(QLatin1StringView(textPropertyC), newActionData.text, action, fw));
 
     if (changeMask & ActionData::ToolTipChanged)
-        undoStack->push(createTextPropertyCommand(QLatin1String(toolTipPropertyC), newActionData.toolTip, action, fw));
+        undoStack->push(createTextPropertyCommand(QLatin1StringView(toolTipPropertyC), newActionData.toolTip, action, fw));
 
     if (changeMask & ActionData::IconChanged)
         undoStack->push(setIconPropertyCommand(newActionData.icon, action, fw));
 
     if (changeMask & ActionData::CheckableChanged)
-        undoStack->push(setPropertyCommand(QLatin1String(checkablePropertyC), newActionData.checkable, false, action, fw));
+        undoStack->push(setPropertyCommand(QLatin1StringView(checkablePropertyC), newActionData.checkable, false, action, fw));
 
     if (changeMask & ActionData::KeysequenceChanged)
         undoStack->push(setKeySequencePropertyCommand(newActionData.keysequence, action, fw));
+
+    if (changeMask & ActionData::MenuRoleChanged)
+        undoStack->push(setPropertyCommand(QLatin1StringView(menuRolePropertyC), static_cast<QAction::MenuRole>(newActionData.menuRole.value), QAction::NoRole, action, fw));
 
     if (severalChanges)
         fw->endCommand();
@@ -596,7 +613,7 @@ void ActionEditor::editCurrentAction()
 void ActionEditor::navigateToSlotCurrentAction()
 {
     if (QAction *a = m_actionView->currentAction())
-        QDesignerTaskMenu::navigateToSlot(m_core, a, QStringLiteral("triggered()"));
+        QDesignerTaskMenu::navigateToSlot(m_core, a, u"triggered()"_s);
 }
 
 void ActionEditor::deleteActions(QDesignerFormWindowInterface *fw, const ActionList &actions)
@@ -655,14 +672,13 @@ void ActionEditor::slotDelete()
 // UnderScore: "Open file" -> actionOpen_file
 static QString underscore(QString text)
 {
-    const QString underscore = QString(QLatin1Char('_'));
-    static const QRegularExpression nonAsciiPattern(QStringLiteral("[^a-zA-Z_0-9]"));
+    static const QRegularExpression nonAsciiPattern(u"[^a-zA-Z_0-9]"_s);
     Q_ASSERT(nonAsciiPattern.isValid());
-    text.replace(nonAsciiPattern, underscore);
-    static const QRegularExpression multipleSpacePattern(QStringLiteral("__*"));
+    text.replace(nonAsciiPattern, "_"_L1);
+    static const QRegularExpression multipleSpacePattern(u"__*"_s);
     Q_ASSERT(multipleSpacePattern.isValid());
-    text.replace(multipleSpacePattern, underscore);
-    if (text.endsWith(underscore.at(0)))
+    text.replace(multipleSpacePattern, "_"_L1);
+    if (text.endsWith(u'_'))
         text.chop(1);
     return text;
 }
@@ -717,7 +733,7 @@ void  ActionEditor::resourceImageDropped(const QString &path, QAction *action)
 
     QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), action);
     const PropertySheetIconValue oldIcon =
-            qvariant_cast<PropertySheetIconValue>(sheet->property(sheet->indexOf(QLatin1String(iconPropertyC))));
+            qvariant_cast<PropertySheetIconValue>(sheet->property(sheet->indexOf(QLatin1StringView(iconPropertyC))));
     PropertySheetIconValue newIcon;
     newIcon.setPixmap(QIcon::Normal, QIcon::Off, PropertySheetPixmapValue(path));
     if (newIcon.paths().isEmpty() || newIcon.paths() == oldIcon.paths())
@@ -774,14 +790,14 @@ void ActionEditor::slotSelectAssociatedWidget(QWidget *w)
 void ActionEditor::restoreSettings()
 {
     QDesignerSettingsInterface *settings = m_core->settingsManager();
-    m_actionView->setViewMode(settings->value(QLatin1String(actionEditorViewModeKey), 0).toInt());
+    m_actionView->setViewMode(settings->value(QLatin1StringView(actionEditorViewModeKey), 0).toInt());
     updateViewModeActions();
 }
 
 void ActionEditor::saveSettings()
 {
     QDesignerSettingsInterface *settings = m_core->settingsManager();
-    settings->setValue(QLatin1String(actionEditorViewModeKey), m_actionView->viewMode());
+    settings->setValue(QLatin1StringView(actionEditorViewModeKey), m_actionView->viewMode());
 }
 
 void ActionEditor::updateViewModeActions()

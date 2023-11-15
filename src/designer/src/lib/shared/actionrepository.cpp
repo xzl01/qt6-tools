@@ -23,17 +23,18 @@
 
 #include <QtCore/qset.h>
 #include <QtCore/qdebug.h>
-
-Q_DECLARE_METATYPE(QAction*)
+#include <QtCore/qmetaobject.h>
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 namespace {
     enum { listModeIconSize = 16, iconModeIconSize = 24 };
 }
 
-static const char *actionMimeType = "action-repository/actions";
-static const char *plainTextMimeType = "text/plain";
+static const char actionMimeType[] = "action-repository/actions";
+static const char plainTextMimeType[] = "text/plain";
 
 static inline QAction *actionOfItem(const QStandardItem* item)
 {
@@ -54,6 +55,7 @@ ActionModel::ActionModel(QWidget *parent ) :
     headers += tr("Shortcut");
     headers += tr("Checkable");
     headers += tr("ToolTip");
+    headers += tr("MenuRole");
     Q_ASSERT(NumColumns == headers.size());
     setHorizontalHeaderLabels(headers);
 }
@@ -137,7 +139,7 @@ PropertySheetKeySequenceValue ActionModel::actionShortCut(QDesignerFormEditorInt
 
 PropertySheetKeySequenceValue ActionModel::actionShortCut(const QDesignerPropertySheetExtension *sheet)
 {
-    const int index = sheet->indexOf(QStringLiteral("shortcut"));
+    const int index = sheet->indexOf(u"shortcut"_s);
     if (index == -1)
         return PropertySheetKeySequenceValue();
     return qvariant_cast<PropertySheetKeySequenceValue>(sheet->property(index));
@@ -151,10 +153,8 @@ void  ActionModel::setItems(QDesignerFormEditorInterface *core, QAction *action,
     // Tooltip, mostly for icon view mode
     QString firstTooltip = action->objectName();
     const QString text = action->text();
-    if (!text.isEmpty()) {
-        firstTooltip += QLatin1Char('\n');
-        firstTooltip += text;
-    }
+    if (!text.isEmpty())
+        firstTooltip += u'\n' + text;
 
     Q_ASSERT(sl.size() == NumColumns);
 
@@ -173,7 +173,7 @@ void  ActionModel::setItems(QDesignerFormEditorInterface *core, QAction *action,
     item->setCheckState(used ? Qt::Checked : Qt::Unchecked);
     if (used) {
         QString usedToolTip;
-        const QString separator = QStringLiteral(", ");
+        const auto separator = ", "_L1;
         const int count = associatedDesignerWidgets.size();
         for (int i = 0; i < count; i++) {
             if (i)
@@ -199,7 +199,11 @@ void  ActionModel::setItems(QDesignerFormEditorInterface *core, QAction *action,
     QString toolTip = action->toolTip();
     item = sl[ToolTipColumn];
     item->setToolTip(toolTip);
-    item->setText(toolTip.replace(QLatin1Char('\n'), QLatin1Char(' ')));
+    item->setText(toolTip.replace(u'\n', u' '));
+    // menuRole
+    const auto menuRole = action->menuRole();
+    item = sl[MenuRoleColumn];
+    item->setText(QLatin1StringView(QMetaEnum::fromType<QAction::MenuRole>().valueToKey(menuRole)));
 }
 
 QMimeData *ActionModel::mimeData(const QModelIndexList &indexes ) const
@@ -217,7 +221,7 @@ QMimeData *ActionModel::mimeData(const QModelIndexList &indexes ) const
 // Resource images are plain text. The drag needs to be restricted, however.
 QStringList ActionModel::mimeTypes() const
 {
-    return QStringList(QLatin1String(plainTextMimeType));
+    return QStringList(QLatin1StringView(plainTextMimeType));
 }
 
 QString ActionModel::actionName(int row) const
@@ -609,7 +613,7 @@ ActionRepositoryMimeData::ActionRepositoryMimeData(const ActionList &al, Qt::Dro
 
 QStringList ActionRepositoryMimeData::formats() const
 {
-    return QStringList(QLatin1String(actionMimeType));
+    return QStringList(QLatin1StringView(actionMimeType));
 }
 
 QPixmap  ActionRepositoryMimeData::actionDragPixmap(const QAction *action)

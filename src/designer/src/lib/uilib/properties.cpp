@@ -17,7 +17,11 @@
 #include <QtWidgets/qframe.h>
 #include <QtWidgets/qabstractscrollarea.h>
 
+#include <limits>
+
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 #ifdef QFORMINTERNAL_NAMESPACE
 namespace QFormInternal
@@ -26,9 +30,9 @@ namespace QFormInternal
 
 static inline void fixEnum(QString &s)
 {
-    int qualifierIndex = s.lastIndexOf(QLatin1Char(':'));
+    qsizetype qualifierIndex = s.lastIndexOf(u':');
     if (qualifierIndex == -1)
-        qualifierIndex = s.lastIndexOf(QLatin1Char('.'));
+        qualifierIndex = s.lastIndexOf(u'.');
     if (qualifierIndex != -1)
         s.remove(0, qualifierIndex + 1);
 }
@@ -107,6 +111,15 @@ QVariant domPropertyToVariant(QAbstractFormBuilder *afb,const QMetaObject *meta,
 
     // simple type
     return domPropertyToVariant(p);
+}
+
+// Convert a legacy Qt 4 integer font weight to the closes enumeration value
+
+static inline QMetaEnum fontWeightMetaEnum()
+{
+    const QMetaEnum result = metaEnum<QAbstractFormBuilderGadget>("fontWeight");
+    Q_ASSERT(result.isValid());
+    return result;
 }
 
 // Convert simple DOM types
@@ -194,8 +207,6 @@ QVariant domPropertyToVariant(const DomProperty *p)
             f.setPointSize(font->elementPointSize());
         if (font->hasElementItalic())
             f.setItalic(font->elementItalic());
-        if (font->hasElementBold())
-            f.setBold(font->elementBold());
         if (font->hasElementUnderline())
             f.setUnderline(font->elementUnderline());
         if (font->hasElementStrikeOut())
@@ -208,6 +219,19 @@ QVariant domPropertyToVariant(const DomProperty *p)
             f.setStyleStrategy(enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QFont::StyleStrategy>("styleStrategy",
                                                                                                         font->elementStyleStrategy().toLatin1().constData()));
         }
+        if (font->hasElementHintingPreference()) {
+            f.setHintingPreference(enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QFont::HintingPreference>("hintingPreference",
+                                                                                                                font->elementHintingPreference().toLatin1().constData()));
+        }
+
+        if (font->hasElementFontWeight()) {
+            f.setWeight(enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QFont::Weight>(
+                "fontWeight",
+                font->elementFontWeight().toLatin1().constData()));
+        } else if (font->hasElementBold()) {
+            f.setBold(font->elementBold());
+        }
+
         return QVariant::fromValue(f);
     }
 
@@ -246,8 +270,8 @@ QVariant domPropertyToVariant(const DomProperty *p)
         const DomLocale *locale = p->elementLocale();
         return QVariant::fromValue(QLocale(enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QLocale::Language>("language",
                                                                                                                  locale->attributeLanguage().toLatin1().constData()),
-                    enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QLocale::Country>("country",
-                                                                                         locale->attributeCountry().toLatin1().constData())));
+                    enumKeyOfObjectToValue<QAbstractFormBuilderGadget, QLocale::Territory>("country",
+                                                                                           locale->attributeCountry().toLatin1().constData())));
     }
     case DomProperty::SizePolicy: {
         const DomSizePolicy *sizep = p->elementSizePolicy();
@@ -294,7 +318,7 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
         DomString *str = new DomString();
         str->setText(v.toString());
         if (!translateString)
-            str->setAttributeNotr(QStringLiteral("true"));
+            str->setAttributeNotr(u"true"_s);
         dom_prop->setElementString(str);
     }
         return true;
@@ -410,8 +434,22 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
         DomFont *fnt = new DomFont();
         const QFont font = qvariant_cast<QFont>(v);
         const uint mask = font.resolveMask();
-        if (mask & QFont::WeightResolved)
-            fnt->setElementBold(font.bold());
+        if (mask & QFont::WeightResolved) {
+            switch (font.weight()) {
+            case QFont::Normal:
+                fnt->setElementBold(false);
+                break;
+            case QFont::Bold:
+                fnt->setElementBold(true);
+                break;
+            default: {
+                const QMetaEnum me = fontWeightMetaEnum();
+                const QString ws = QLatin1StringView(me.valueToKey(font.weight()));
+                fnt->setElementFontWeight(ws);
+            }
+                break;
+            }
+        }
         if ((mask & (QFont::FamilyResolved | QFont::FamiliesResolved)) != 0)
             fnt->setElementFamily(font.family());
         if (mask & QFont::StyleResolved)
@@ -426,8 +464,13 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
             fnt->setElementKerning(font.kerning());
         if (mask & QFont::StyleStrategyResolved) {
             const QMetaEnum styleStrategy_enum = metaEnum<QAbstractFormBuilderGadget>("styleStrategy");
-            fnt->setElementStyleStrategy(QLatin1String(styleStrategy_enum.valueToKey(font.styleStrategy())));
+            fnt->setElementStyleStrategy(QLatin1StringView(styleStrategy_enum.valueToKey(font.styleStrategy())));
         }
+        if (mask & QFont::HintingPreferenceResolved) {
+            const QMetaEnum hintingPreference_enum = metaEnum<QAbstractFormBuilderGadget>("hintingPreference");
+            fnt->setElementHintingPreference(QLatin1StringView(hintingPreference_enum.valueToKey(font.hintingPreference())));
+        }
+
         dom_prop->setElementFont(fnt);
     }
         return true;
@@ -435,7 +478,7 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
 #if QT_CONFIG(cursor)
     case QMetaType::QCursor: {
         const QMetaEnum cursorShape_enum = metaEnum<QAbstractFormBuilderGadget>("cursorShape");
-        dom_prop->setElementCursorShape(QLatin1String(cursorShape_enum.valueToKey(qvariant_cast<QCursor>(v).shape())));
+        dom_prop->setElementCursorShape(QLatin1StringView(cursorShape_enum.valueToKey(qvariant_cast<QCursor>(v).shape())));
         }
         return true;
 #endif
@@ -454,8 +497,8 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
         const QMetaEnum language_enum = metaEnum<QAbstractFormBuilderGadget>("language");
         const QMetaEnum territory_enum = metaEnum<QAbstractFormBuilderGadget>("country");
 
-        dom->setAttributeLanguage(QLatin1String(language_enum.valueToKey(locale.language())));
-        dom->setAttributeCountry(QLatin1String(territory_enum.valueToKey(locale.territory())));
+        dom->setAttributeLanguage(QLatin1StringView(language_enum.valueToKey(locale.language())));
+        dom->setAttributeCountry(QLatin1StringView(territory_enum.valueToKey(locale.territory())));
 
         dom_prop->setElementLocale(dom);
         }
@@ -470,8 +513,8 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
 
         const QMetaEnum sizeType_enum = metaEnum<QAbstractFormBuilderGadget>("sizeType");
 
-        dom->setAttributeHSizeType(QLatin1String(sizeType_enum.valueToKey(sizePolicy.horizontalPolicy())));
-        dom->setAttributeVSizeType(QLatin1String(sizeType_enum.valueToKey(sizePolicy.verticalPolicy())));
+        dom->setAttributeHSizeType(QLatin1StringView(sizeType_enum.valueToKey(sizePolicy.horizontalPolicy())));
+        dom->setAttributeVSizeType(QLatin1StringView(sizeType_enum.valueToKey(sizePolicy.verticalPolicy())));
 
         dom_prop->setElementSizePolicy(dom);
     }
@@ -544,7 +587,7 @@ static bool applySimpleProperty(const QVariant &v, bool translateString, DomProp
 static QString msgCannotWriteProperty(const QString &pname, const QVariant &v)
 {
     return QCoreApplication::translate("QFormBuilder", "The property %1 could not be written. The type %2 is not supported yet.").
-                       arg(pname).arg(QLatin1String(v.typeName()));
+                       arg(pname).arg(QLatin1StringView(v.typeName()));
 
 }
 

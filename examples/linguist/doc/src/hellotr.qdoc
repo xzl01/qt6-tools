@@ -4,6 +4,8 @@
 /*!
     \example hellotr
     \ingroup examples-linguist
+    \examplecategory {Internationalization}
+
     \title Hello tr() Example
 
     \brief Translating a small Hello World program to Latin.
@@ -32,6 +34,10 @@
     Tries to load a file called \c hellotr_la.qm (the \c .qm file extension is
     implicit) that contains Latin translations for the source texts used in
     the program. No error will occur if the file is not found.
+    This example works best on desktop platforms.
+    On platforms like Android and iOS,
+    the .qm file needs to be part of the app bundle. Usually,
+    this involves bundling the .qm file in a Qt resource.
 
     \snippet hellotr/main.cpp 7
 
@@ -58,27 +64,22 @@
 
     \section1 Creating a Latin Message File
 
-    The first step is to create a project file, \c hellotr.pro, that lists
-    all the source files for the project. The project file can be a qmake
-    project file, or even an ordinary makefile. Any file that contains
+    The first step is to create a project file that lists
+    all the source files for the project.
+
+    When using qmake, the relevant lines in \c hellotr.pro are:
 
     \snippet hellotr/hellotr.pro 0
     \snippet hellotr/hellotr.pro 1
 
-    will work. \c TRANSLATIONS specifies the message files we want to
+    \c TRANSLATIONS specifies the message files we want to
     maintain. In this example, we just maintain one set of translations,
     namely Latin.
 
-    It is also possible to produce translations using the
-    \l{cmake-macros-qtlinguisttools}{Qt6::LinguistTools CMake commands}.
-    One needs to add the following to the \c CMakeLists.txt:
+    When using CMake, the relevant lines in \c CMakeLists.txt are:
     \snippet hellotr/CMakeLists.txt 0
     \codeline
     \snippet hellotr/CMakeLists.txt 1
-
-    After configuring and building, the translations are produced by running:
-
-    \snippet doc/snippets/doc_src_examples_hellotr.qdoc 5
 
     Note that the file extension is \c .ts, not \c .qm. The \c .ts
     translation source format is designed for use during the
@@ -106,16 +107,23 @@
     \c lupdate is used to create and update the message files (\c hellotr_la.ts
     in this case) to keep them in sync with the source code. It is safe to
     run \c lupdate at any time, as \c lupdate does not remove any
-    information. For example, you can put it in the makefile, so the TS
-    files are updated whenever the source changes.
+    information.
 
-    Try running \c lupdate right now, like this:
+    Try running \c lupdate right now.
+
+    When using qmake, \c lupdate must be run manually:
 
     \snippet doc/snippets/doc_src_examples_hellotr.qdoc 0
 
     (The \c -verbose option instructs \c lupdate to display messages that
-    explain what it is doing.) You should now have a file \c hellotr_la.ts in
-    the current directory, containing this:
+    explain what it is doing.)
+
+    When using CMake, build the \c update_translations target to run \c lupdate:
+
+    \snippet doc/snippets/doc_src_examples_hellotr.qdoc 5
+
+    You should now have a file \c hellotr_la.ts in
+    the source directory, containing this:
 
     \snippet doc/snippets/doc_src_examples_hellotr.qdoc 1
 

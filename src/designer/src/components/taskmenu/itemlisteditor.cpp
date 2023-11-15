@@ -16,6 +16,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 class ItemPropertyBrowser : public QtTreePropertyBrowser
@@ -28,7 +30,7 @@ public:
         const QString widthSampleString = QCoreApplication::translate("ItemPropertyBrowser", "XX Icon Selected off");
         m_width = fontMetrics().horizontalAdvance(widthSampleString);
         setSplitterPosition(m_width);
-        m_width += fontMetrics().horizontalAdvance(QStringLiteral("/this/is/some/random/path"));
+        m_width += fontMetrics().horizontalAdvance(u"/this/is/some/random/path"_s);
     }
 
     QSize sizeHint() const override
@@ -45,7 +47,6 @@ AbstractItemEditor::AbstractItemEditor(QDesignerFormWindowInterface *form, QWidg
     : QWidget(parent),
       m_iconCache(qobject_cast<FormWindowBase *>(form)->iconCache())
 {
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     m_propertyManager = new DesignerPropertyManager(form->core(), this);
     m_editorFactory = new DesignerEditorFactory(form->core(), this);
     m_editorFactory->setSpacing(0);
@@ -97,23 +98,23 @@ void AbstractItemEditor::setupProperties(const PropertyDefinition *propList,
     for (int i = 0; propList[i].name; i++) {
         int type = propList[i].typeFunc ? propList[i].typeFunc() : propList[i].type;
         int role = propList[i].role;
-        QtVariantProperty *prop = m_propertyManager->addProperty(type, QLatin1String(propList[i].name));
+        QtVariantProperty *prop = m_propertyManager->addProperty(type, QLatin1StringView(propList[i].name));
         if (role == Qt::TextAlignmentRole) {
             prop->setAttribute(DesignerPropertyManager::alignDefaultAttribute(),
                                QVariant(uint(alignDefault)));
         }
         Q_ASSERT(prop);
         if (role == Qt::ToolTipPropertyRole || role == Qt::WhatsThisPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationRichText);
+            prop->setAttribute(u"validationMode"_s, ValidationRichText);
         else if (role == Qt::DisplayPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationMultiLine);
+            prop->setAttribute(u"validationMode"_s, ValidationMultiLine);
         else if (role == Qt::StatusTipPropertyRole)
-            prop->setAttribute(QStringLiteral("validationMode"), ValidationSingleLine);
+            prop->setAttribute(u"validationMode"_s, ValidationSingleLine);
         else if (role == ItemFlagsShadowRole)
-            prop->setAttribute(QStringLiteral("flagNames"), c2qStringList(itemFlagNames));
+            prop->setAttribute(u"flagNames"_s, c2qStringList(itemFlagNames));
         else if (role == Qt::CheckStateRole)
-            prop->setAttribute(QStringLiteral("enumNames"), c2qStringList(checkStateNames));
-        prop->setAttribute(QStringLiteral("resettable"), true);
+            prop->setAttribute(u"enumNames"_s, c2qStringList(checkStateNames));
+        prop->setAttribute(u"resettable"_s, true);
         m_properties.append(prop);
         m_rootProperties.append(prop);
         m_propertyToRole.insert(prop, role);
@@ -270,12 +271,26 @@ ItemListEditor::ItemListEditor(QDesignerFormWindowInterface *form, QWidget *pare
     injectPropertyBrowser(this, ui.widget);
     connect(ui.showPropertiesButton, &QAbstractButton::clicked,
             this, &ItemListEditor::togglePropertyBrowser);
+
+    connect(ui.newListItemButton, &QAbstractButton::clicked,
+            this, &ItemListEditor::newListItemButtonClicked);
+    connect(ui.deleteListItemButton, &QAbstractButton::clicked,
+            this, &ItemListEditor::deleteListItemButtonClicked);
+    connect(ui.moveListItemUpButton, &QAbstractButton::clicked,
+            this, &ItemListEditor::moveListItemUpButtonClicked);
+    connect(ui.moveListItemDownButton, &QAbstractButton::clicked,
+            this, &ItemListEditor::moveListItemDownButtonClicked);
+    connect(ui.listWidget, &QListWidget::currentRowChanged,
+            this, &ItemListEditor::listWidgetCurrentRowChanged);
+    connect(ui.listWidget, &QListWidget::itemChanged,
+            this, &ItemListEditor::listWidgetItemChanged);
+
     setPropertyBrowserVisible(false);
 
-    QIcon upIcon = createIconSet(QString::fromUtf8("up.png"));
-    QIcon downIcon = createIconSet(QString::fromUtf8("down.png"));
-    QIcon minusIcon = createIconSet(QString::fromUtf8("minus.png"));
-    QIcon plusIcon = createIconSet(QString::fromUtf8("plus.png"));
+    QIcon upIcon = createIconSet(u"up.png"_s);
+    QIcon downIcon = createIconSet(u"down.png"_s);
+    QIcon minusIcon = createIconSet(u"minus.png"_s);
+    QIcon plusIcon = createIconSet(u"plus.png"_s);
     ui.moveListItemUpButton->setIcon(upIcon);
     ui.moveListItemDownButton->setIcon(downIcon);
     ui.newListItemButton->setIcon(plusIcon);
@@ -303,7 +318,7 @@ void ItemListEditor::setCurrentIndex(int idx)
     m_updating = false;
 }
 
-void ItemListEditor::on_newListItemButton_clicked()
+void ItemListEditor::newListItemButtonClicked()
 {
     int row = ui.listWidget->currentRow() + 1;
 
@@ -322,7 +337,7 @@ void ItemListEditor::on_newListItemButton_clicked()
     ui.listWidget->editItem(item);
 }
 
-void ItemListEditor::on_deleteListItemButton_clicked()
+void ItemListEditor::deleteListItemButtonClicked()
 {
     int row = ui.listWidget->currentRow();
 
@@ -339,7 +354,7 @@ void ItemListEditor::on_deleteListItemButton_clicked()
         ui.listWidget->setCurrentRow(row);
 }
 
-void ItemListEditor::on_moveListItemUpButton_clicked()
+void ItemListEditor::moveListItemUpButtonClicked()
 {
     int row = ui.listWidget->currentRow();
     if (row <= 0)
@@ -350,7 +365,7 @@ void ItemListEditor::on_moveListItemUpButton_clicked()
     emit itemMovedUp(row);
 }
 
-void ItemListEditor::on_moveListItemDownButton_clicked()
+void ItemListEditor::moveListItemDownButtonClicked()
 {
     int row = ui.listWidget->currentRow();
     if (row == -1 || row == ui.listWidget->count() - 1)
@@ -361,14 +376,14 @@ void ItemListEditor::on_moveListItemDownButton_clicked()
     emit itemMovedDown(row);
 }
 
-void ItemListEditor::on_listWidget_currentRowChanged()
+void ItemListEditor::listWidgetCurrentRowChanged()
 {
     updateEditor();
     if (!m_updating)
         emit indexChanged(ui.listWidget->currentRow());
 }
 
-void ItemListEditor::on_listWidget_itemChanged(QListWidgetItem *item)
+void ItemListEditor::listWidgetItemChanged(QListWidgetItem *item)
 {
     if (m_updatingBrowser)
         return;
@@ -400,9 +415,11 @@ void ItemListEditor::setItemData(int role, const QVariant &v)
 {
     QListWidgetItem *item = ui.listWidget->currentItem();
     bool reLayout = false;
-    if ((role == Qt::EditRole && (v.toString().count(QLatin1Char('\n')) != item->data(role).toString().count(QLatin1Char('\n'))))
-        || role == Qt::FontRole)
+    if ((role == Qt::EditRole
+         && (v.toString().count(u'\n') != item->data(role).toString().count(u'\n')))
+        || role == Qt::FontRole) {
             reLayout = true;
+    }
     QVariant newValue = v;
     if (role == Qt::FontRole && newValue.metaType().id() == QMetaType::QFont) {
         QFont oldFont = ui.listWidget->font();

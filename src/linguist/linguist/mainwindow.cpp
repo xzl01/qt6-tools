@@ -260,7 +260,7 @@ MainWindow::MainWindow()
     setUnifiedTitleAndToolBarOnMac(true);
     m_ui.setupUi(this);
 
-#if !defined(Q_OS_OSX) && !defined(Q_OS_WIN)
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_WIN)
     setWindowIcon(QPixmap(QLatin1String(":/images/appicon.png") ));
 #endif
 
@@ -1264,7 +1264,7 @@ void MainWindow::addToPhraseBook()
         if (pb->language() != QLocale::C && m_dataModel->language(m_currentIndex.model()) != QLocale::C) {
             if (pb->language() != m_dataModel->language(m_currentIndex.model()))
                 continue;
-            if (pb->country() == m_dataModel->model(m_currentIndex.model())->country())
+            if (pb->territory() == m_dataModel->model(m_currentIndex.model())->territory())
                 phraseBookList.prepend(pb->friendlyPhraseBookName());
             else
                 phraseBookList.append(pb->friendlyPhraseBookName());
@@ -1347,7 +1347,7 @@ void MainWindow::about()
     const QString description
             = tr("Qt Linguist is a tool for adding translations to Qt applications.");
     const QString copyright
-            = tr("Copyright (C) %1 The Qt Company Ltd.").arg(QStringLiteral("2022"));
+            = tr("Copyright (C) %1 The Qt Company Ltd.").arg(QStringLiteral("2023"));
     box.setText(QStringLiteral("<center><img src=\":/images/icons/linguist-128-32.png\"/></img><p>%1</p></center>"
                                "<p>%2</p>"
                                "<p>%3</p>").arg(version, description, copyright));
@@ -2400,7 +2400,7 @@ void MainWindow::updatePhraseDictInternal(int model)
         if (pb->language() != QLocale::C && m_dataModel->language(model) != QLocale::C) {
             if (pb->language() != m_dataModel->language(model))
                 continue;
-            before = (pb->country() == m_dataModel->model(model)->country());
+            before = (pb->territory() == m_dataModel->model(model)->territory());
         } else {
             before = false;
         }
@@ -2598,8 +2598,9 @@ void MainWindow::updateDanger(const MultiDataIndex &index, bool verbose)
                                     escape_start, escape_end - escape_start).toInt(&ok);
                             if (ok)
                                 placeMarkerIndexes[markerIndex] += (pass == 0 ? numTranslations : -1);
+                        } else {
+                            ++c;
                         }
-                        ++c;
                     }
                 }
 

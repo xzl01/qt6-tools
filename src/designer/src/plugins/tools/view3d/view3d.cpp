@@ -127,7 +127,7 @@ void QView3DWidget::addTexture(QWidget *w, const QPixmap &pm)
 
 void QView3DWidget::addWidget(int depth, QWidget *widget)
 {
-    TextureMap::const_iterator it = m_texture_map.find(widget);
+    const auto it = m_texture_map.find(widget);
     Q_ASSERT(it != m_texture_map.end());
 
     makeCurrent();
@@ -163,7 +163,7 @@ void QView3DWidget::clear()
 {
     makeCurrent();
     glDeleteLists(m_form_list_id, 1);
-    for (TextureMap::iterator it = m_texture_map.begin(), end = m_texture_map.end(); it != end; ++it)
+    for (auto it = m_texture_map.begin(), end = m_texture_map.end(); it != end; ++it)
         glDeleteTextures(1, &(it.value()));
     m_texture_map.clear();
     m_widget_name_map.clear();
@@ -374,9 +374,8 @@ static void grabWidget_helper(QWidget *widget, QPixmap &res, QPixmap &buf,
         pt.drawPixmap(offset.x(), offset.y(), buf, 0, 0, r.width(), r.height());
     }
 
-    const QObjectList children = widget->children();
-    for (int i = 0; i < children.size(); ++i) {
-        QWidget *child = qobject_cast<QWidget*>(children.at(i));
+    for (auto *o : widget->children()) {
+        QWidget *child = qobject_cast<QWidget*>(o);
         if (child == 0 || child->isWindow())
             continue;
         if (child->isHidden() || !child->geometry().intersects(r))

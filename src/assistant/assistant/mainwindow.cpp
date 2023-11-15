@@ -166,7 +166,7 @@ MainWindow::MainWindow(CmdLineParser *cmdLine, QWidget *parent)
         } while (reader.jumpToNextImage());
         qApp->setWindowIcon(appIcon);
     }
-#if !defined(Q_OS_OSX) && !defined(Q_OS_WIN)
+#if !defined(Q_OS_MACOS) && !defined(Q_OS_WIN)
     else {
         QIcon appIcon(QLatin1String(":/qt-project.org/assistant/images/assistant-128.png"));
         qApp->setWindowIcon(appIcon);
@@ -193,9 +193,9 @@ MainWindow::MainWindow(CmdLineParser *cmdLine, QWidget *parent)
         tabifyDockWidget(bookmarkDock, searchDock);
         contentDock->raise();
         const QRect screen = QGuiApplication::primaryScreen()->geometry();
-        resize(4*screen.width()/5, 4*screen.height()/5);
-
         adjustSize();   // make sure we won't start outside of the screen
+        resize(4 * screen.width() / 5, 4 * screen.height() / 5);
+
         move(screen.center() - rect().center());
     }
 
@@ -844,16 +844,18 @@ void MainWindow::showAboutDialog()
     } else {
         QByteArray resources;
 #if defined(BROWSER_QTWEBKIT)
-        const QString browser = QStringLiteral("Qt WebKit");
+        QString browser = QStringLiteral("Qt WebKit");
 #else
-        const QString browser = QStringLiteral("QTextBrowser");
+        QString browser = QStringLiteral("QTextBrowser");
 #endif
+        if (m_centralWidget->currentHelpViewer())
+            browser = QStringLiteral("QLiteHtmlWidget");
         aboutDia.setText(tr("<center>"
             "<h3>%1</h3>"
             "<p>Version %2</p>"
             "<p>Browser: %3</p></center>"
             "<p>Copyright (C) %4 The Qt Company Ltd.</p>")
-            .arg(tr("Qt Assistant"), QLatin1String(QT_VERSION_STR), browser, QStringLiteral("2022")),
+            .arg(tr("Qt Assistant"), QLatin1String(QT_VERSION_STR), browser, QStringLiteral("2023")),
             resources);
         QLatin1String path(":/qt-project.org/assistant/images/assistant-128.png");
         aboutDia.setPixmap(QString(path));

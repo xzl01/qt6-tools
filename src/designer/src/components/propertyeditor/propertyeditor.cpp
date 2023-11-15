@@ -45,16 +45,18 @@
 #include <QtCore/qdebug.h>
 #include <QtCore/qtextstream.h>
 
-static const char *SettingsGroupC = "PropertyEditor";
-static const char *ViewKeyC = "View";
-static const char *ColorKeyC = "Colored";
-static const char *SortedKeyC = "Sorted";
-static const char *ExpansionKeyC = "ExpandedItems";
-static const char *SplitterPositionKeyC = "SplitterPosition";
+static const char SettingsGroupC[] = "PropertyEditor";
+static const char ViewKeyC[] = "View";
+static const char ColorKeyC[] = "Colored";
+static const char SortedKeyC[] = "Sorted";
+static const char ExpansionKeyC[] = "ExpandedItems";
+static const char SplitterPositionKeyC[] = "SplitterPosition";
 
 enum SettingsView { TreeView, ButtonView };
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 // ---------------------------------------------------------------------------------
 
@@ -110,20 +112,20 @@ void ElidingLabel::paintEvent(QPaintEvent *) {
 // ----------- PropertyEditor::Strings
 
 PropertyEditor::Strings::Strings() :
-    m_fontProperty(QStringLiteral("font")),
-    m_qLayoutWidget(QStringLiteral("QLayoutWidget")),
-    m_designerPrefix(QStringLiteral("QDesigner")),
-    m_layout(QStringLiteral("Layout")),
-    m_validationModeAttribute(QStringLiteral("validationMode")),
-    m_fontAttribute(QStringLiteral("font")),
-    m_superPaletteAttribute(QStringLiteral("superPalette")),
-    m_enumNamesAttribute(QStringLiteral("enumNames")),
-    m_resettableAttribute(QStringLiteral("resettable")),
-    m_flagsAttribute(QStringLiteral("flags"))
+    m_alignmentProperties{u"alignment"_s,
+                          u"layoutLabelAlignment"_s, // QFormLayout
+                          u"layoutFormAlignment"_s},
+    m_fontProperty(u"font"_s),
+    m_qLayoutWidget(u"QLayoutWidget"_s),
+    m_designerPrefix(u"QDesigner"_s),
+    m_layout(u"Layout"_s),
+    m_validationModeAttribute(u"validationMode"_s),
+    m_fontAttribute(u"font"_s),
+    m_superPaletteAttribute(u"superPalette"_s),
+    m_enumNamesAttribute(u"enumNames"_s),
+    m_resettableAttribute(u"resettable"_s),
+    m_flagsAttribute(u"flags"_s)
 {
-    m_alignmentProperties.insert(QStringLiteral("alignment"));
-    m_alignmentProperties.insert(QStringLiteral("layoutLabelAlignment")); // QFormLayout
-    m_alignmentProperties.insert(QStringLiteral("layoutFormAlignment"));
 }
 
 // ----------- PropertyEditor
@@ -181,10 +183,10 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
     m_propertyManager(new DesignerPropertyManager(m_core, this)),
     m_stackedWidget(new QStackedWidget),
     m_filterWidget(new QLineEdit),
-    m_addDynamicAction(new QAction(createIconSet(QStringLiteral("plus.png")), tr("Add Dynamic Property..."), this)),
-    m_removeDynamicAction(new QAction(createIconSet(QStringLiteral("minus.png")), tr("Remove Dynamic Property"), this)),
-    m_sortingAction(new QAction(createIconSet(QStringLiteral("sort.png")), tr("Sorting"), this)),
-    m_coloringAction(new QAction(createIconSet(QStringLiteral("color.png")), tr("Color Groups"), this)),
+    m_addDynamicAction(new QAction(createIconSet(u"plus.png"_s), tr("Add Dynamic Property..."), this)),
+    m_removeDynamicAction(new QAction(createIconSet(u"minus.png"_s), tr("Remove Dynamic Property"), this)),
+    m_sortingAction(new QAction(createIconSet(u"sort.png"_s), tr("Sorting"), this)),
+    m_coloringAction(new QAction(createIconSet(u"color.png"_s), tr("Color Groups"), this)),
     m_treeAction(new QAction(tr("Tree View"), this)),
     m_buttonAction(new QAction(tr("Drop Down Button View"), this)),
     m_classLabel(new ElidingLabel)
@@ -205,9 +207,9 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
     QActionGroup *actionGroup = new QActionGroup(this);
 
     m_treeAction->setCheckable(true);
-    m_treeAction->setIcon(createIconSet(QStringLiteral("widgets/listview.png")));
+    m_treeAction->setIcon(createIconSet(u"widgets/listview.png"_s));
     m_buttonAction->setCheckable(true);
-    m_buttonAction->setIcon(createIconSet(QStringLiteral("dropdownbutton.png")));
+    m_buttonAction->setIcon(createIconSet(u"dropdownbutton.png"_s));
 
     actionGroup->addAction(m_treeAction);
     actionGroup->addAction(m_buttonAction);
@@ -237,7 +239,7 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
     connect(m_removeDynamicAction, &QAction::triggered, this, &PropertyEditor::slotRemoveDynamicProperty);
     // Configure
     QAction *configureAction = new QAction(tr("Configure Property Editor"), this);
-    configureAction->setIcon(createIconSet(QStringLiteral("configure.png")));
+    configureAction->setIcon(createIconSet(u"configure.png"_s));
     QMenu *configureMenu = new QMenu(this);
     configureAction->setMenu(configureMenu);
 
@@ -306,13 +308,13 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
 
     // retrieve initial settings
     QDesignerSettingsInterface *settings = m_core->settingsManager();
-    settings->beginGroup(QLatin1String(SettingsGroupC));
-    const SettingsView view = settings->value(QLatin1String(ViewKeyC), TreeView).toInt() == TreeView ? TreeView :  ButtonView;
+    settings->beginGroup(QLatin1StringView(SettingsGroupC));
+    const SettingsView view = settings->value(QLatin1StringView(ViewKeyC), TreeView).toInt() == TreeView ? TreeView :  ButtonView;
     // Coloring not available unless treeview and not sorted
-    m_sorting = settings->value(QLatin1String(SortedKeyC), false).toBool();
-    m_coloring = settings->value(QLatin1String(ColorKeyC), true).toBool();
-    const QVariantMap expansionState = settings->value(QLatin1String(ExpansionKeyC), QVariantMap()).toMap();
-    const int splitterPosition = settings->value(QLatin1String(SplitterPositionKeyC), 150).toInt();
+    m_sorting = settings->value(QLatin1StringView(SortedKeyC), false).toBool();
+    m_coloring = settings->value(QLatin1StringView(ColorKeyC), true).toBool();
+    const QVariantMap expansionState = settings->value(QLatin1StringView(ExpansionKeyC), QVariantMap()).toMap();
+    const int splitterPosition = settings->value(QLatin1StringView(SplitterPositionKeyC), 150).toInt();
     settings->endGroup();
     // Apply settings
     m_sortingAction->setChecked(m_sorting);
@@ -331,11 +333,9 @@ PropertyEditor::PropertyEditor(QDesignerFormEditorInterface *core, QWidget *pare
         break;
     }
     // Restore expansionState from QVariant map
-    if (!expansionState.isEmpty()) {
-        const QVariantMap::const_iterator cend = expansionState.constEnd();
-        for (QVariantMap::const_iterator it = expansionState.constBegin(); it != cend; ++it)
-            m_expansionState.insert(it.key(), it.value().toBool());
-    }
+    for (auto it = expansionState.cbegin(), cend = expansionState.cend(); it != cend; ++it)
+        m_expansionState.insert(it.key(), it.value().toBool());
+
     updateActionsState();
 }
 
@@ -351,19 +351,16 @@ PropertyEditor::~PropertyEditor()
 void PropertyEditor::saveSettings() const
 {
     QDesignerSettingsInterface *settings = m_core->settingsManager();
-    settings->beginGroup(QLatin1String(SettingsGroupC));
-    settings->setValue(QLatin1String(ViewKeyC), QVariant(m_treeAction->isChecked() ? TreeView : ButtonView));
-    settings->setValue(QLatin1String(ColorKeyC), QVariant(m_coloring));
-    settings->setValue(QLatin1String(SortedKeyC), QVariant(m_sorting));
+    settings->beginGroup(QLatin1StringView(SettingsGroupC));
+    settings->setValue(QLatin1StringView(ViewKeyC), QVariant(m_treeAction->isChecked() ? TreeView : ButtonView));
+    settings->setValue(QLatin1StringView(ColorKeyC), QVariant(m_coloring));
+    settings->setValue(QLatin1StringView(SortedKeyC), QVariant(m_sorting));
     // Save last expansionState as QVariant map
     QVariantMap expansionState;
-    if (!m_expansionState.isEmpty()) {
-        const QMap<QString, bool>::const_iterator cend = m_expansionState.constEnd();
-        for (QMap<QString, bool>::const_iterator it = m_expansionState.constBegin(); it != cend; ++it)
-            expansionState.insert(it.key(), QVariant(it.value()));
-    }
-    settings->setValue(QLatin1String(ExpansionKeyC), expansionState);
-    settings->setValue(QLatin1String(SplitterPositionKeyC), m_treeBrowser->splitterPosition());
+    for (auto it = m_expansionState.cbegin(), cend = m_expansionState.cend(); it != cend; ++it)
+        expansionState.insert(it.key(), QVariant(it.value()));
+    settings->setValue(QLatin1StringView(ExpansionKeyC), expansionState);
+    settings->setValue(QLatin1StringView(SplitterPositionKeyC), m_treeBrowser->splitterPosition());
     settings->endGroup();
 }
 
@@ -405,16 +402,13 @@ bool PropertyEditor::isItemVisible(QtBrowserItem *item) const
 
 void PropertyEditor::storePropertiesExpansionState(const QList<QtBrowserItem *> &items)
 {
-    const QChar bar = QLatin1Char('|');
     for (QtBrowserItem *propertyItem : items) {
         if (!propertyItem->children().isEmpty()) {
             QtProperty *property = propertyItem->property();
             const QString propertyName = property->propertyName();
-            const QMap<QtProperty *, QString>::const_iterator itGroup = m_propertyToGroup.constFind(property);
+            const auto itGroup = m_propertyToGroup.constFind(property);
             if (itGroup != m_propertyToGroup.constEnd()) {
-                QString key = itGroup.value();
-                key += bar;
-                key += propertyName;
+                const QString key = itGroup.value() + u'|' + propertyName;
                 m_expansionState[key] = isExpanded(propertyItem);
             }
         }
@@ -448,17 +442,14 @@ void PropertyEditor::collapseAll()
 
 void PropertyEditor::applyPropertiesExpansionState(const QList<QtBrowserItem *> &items)
 {
-    const QChar bar = QLatin1Char('|');
     for (QtBrowserItem *propertyItem : items) {
-        const QMap<QString, bool>::const_iterator excend = m_expansionState.constEnd();
+        const auto excend = m_expansionState.cend();
         QtProperty *property = propertyItem->property();
         const QString propertyName = property->propertyName();
-        const QMap<QtProperty *, QString>::const_iterator itGroup = m_propertyToGroup.constFind(property);
+        const auto itGroup = m_propertyToGroup.constFind(property);
         if (itGroup != m_propertyToGroup.constEnd()) {
-            QString key = itGroup.value();
-            key += bar;
-            key += propertyName;
-            const QMap<QString, bool>::const_iterator pit = m_expansionState.constFind(key);
+            const QString key = itGroup.value() + u'|' + propertyName;
+            const auto pit = m_expansionState.constFind(key);
             if (pit != excend)
                 setExpanded(propertyItem, pit.value());
             else
@@ -473,10 +464,10 @@ void PropertyEditor::applyExpansionState()
     if (m_sorting) {
         applyPropertiesExpansionState(items);
     } else {
-        const QMap<QString, bool>::const_iterator excend = m_expansionState.constEnd();
+        const auto excend = m_expansionState.cend();
         for (QtBrowserItem *item : items) {
             const QString groupName = item->property()->propertyName();
-            const QMap<QString, bool>::const_iterator git = m_expansionState.constFind(groupName);
+            const auto git = m_expansionState.constFind(groupName);
             if (git != excend)
                 setExpanded(item, git.value());
             else
@@ -546,7 +537,7 @@ QColor PropertyEditor::propertyColor(QtProperty *property) const
 
     QtProperty *groupProperty = property;
 
-    QMap<QtProperty *, QString>::ConstIterator itProp = m_propertyToGroup.constFind(property);
+    const auto itProp = m_propertyToGroup.constFind(property);
     if (itProp != m_propertyToGroup.constEnd())
         groupProperty = m_nameToGroup.value(itProp.value());
 
@@ -703,7 +694,7 @@ void PropertyEditor::setReadOnly(bool /*readOnly*/)
 
 void PropertyEditor::setPropertyValue(const QString &name, const QVariant &value, bool changed)
 {
-    const QMap<QString, QtVariantProperty*>::const_iterator it = m_nameToProperty.constFind(name);
+    const auto it = m_nameToProperty.constFind(name);
     if (it == m_nameToProperty.constEnd())
         return;
     QtVariantProperty *property = it.value();
@@ -721,10 +712,10 @@ void PropertyEditor::updatePropertySheet()
     updateToolBarLabel();
 
     const int propertyCount = m_propertySheet->count();
-    const  QMap<QString, QtVariantProperty*>::const_iterator npcend = m_nameToProperty.constEnd();
+    const auto npcend = m_nameToProperty.cend();
     for (int i = 0; i < propertyCount; ++i) {
         const QString propertyName = m_propertySheet->propertyName(i);
-        QMap<QString, QtVariantProperty*>::const_iterator it = m_nameToProperty.constFind(propertyName);
+        const auto it = m_nameToProperty.constFind(propertyName);
         if (it != npcend)
             updateBrowserValue(it.value(), m_propertySheet->property(i));
     }
@@ -754,7 +745,7 @@ void PropertyEditor::updateToolBarLabel()
 
     QString classLabelText;
     if (!objectName.isEmpty())
-        classLabelText += objectName + QStringLiteral(" : ");
+        classLabelText += objectName + " : "_L1;
     classLabelText += className;
 
     m_classLabel->setText(classLabelText);
@@ -794,7 +785,7 @@ void PropertyEditor::updateBrowserValue(QtVariantProperty *property, const QVari
     m_updatingBrowser = true;
     property->setValue(v);
     if (sheet && sheet->isResourceProperty(index))
-        property->setAttribute(QStringLiteral("defaultResource"), sheet->defaultResourceProperty(index));
+        property->setAttribute(u"defaultResource"_s, sheet->defaultResourceProperty(index));
     m_updatingBrowser = false;
 }
 
@@ -816,14 +807,14 @@ QString PropertyEditor::realClassName(QObject *object) const
     if (!object)
         return QString();
 
-    QString className = QLatin1String(object->metaObject()->className());
+    QString className = QLatin1StringView(object->metaObject()->className());
     const QDesignerWidgetDataBaseInterface *db = core()->widgetDataBase();
     if (QDesignerWidgetDataBaseItemInterface *widgetItem = db->item(db->indexOfObject(object, true))) {
         className = widgetItem->name();
 
         if (object->isWidgetType() && className == m_strings.m_qLayoutWidget
                 && static_cast<QWidget*>(object)->layout()) {
-            className = QLatin1String(static_cast<QWidget*>(object)->layout()->metaObject()->className());
+            className = QLatin1StringView(static_cast<QWidget*>(object)->layout()->metaObject()->className());
         }
     }
 
@@ -918,7 +909,7 @@ void PropertyEditor::setObject(QObject *object)
             if (m_propertySheet->indexOf(propertyName) != i)
                 continue;
             const QString groupName = m_propertySheet->propertyGroup(i);
-            const QMap<QString, QtVariantProperty *>::const_iterator rit = toRemove.constFind(propertyName);
+            const auto rit = toRemove.constFind(propertyName);
             if (rit != toRemove.constEnd()) {
                 QtVariantProperty *property = rit.value();
                 const int propertyType = property->propertyType();
@@ -1004,8 +995,8 @@ void PropertyEditor::setObject(QObject *object)
                     descriptionToolTip = customData.propertyToolTip(propertyName);
                 if (descriptionToolTip.isEmpty()) {
                     if (const char *typeS = typeName(type)) {
-                        descriptionToolTip = propertyName + QLatin1String(" (")
-                            + QLatin1String(typeS) + QLatin1Char(')');
+                        descriptionToolTip = propertyName + " ("_L1
+                            + QLatin1StringView(typeS) + ')'_L1;
                     }
                 }
                 if (!descriptionToolTip.isEmpty())
@@ -1028,16 +1019,16 @@ void PropertyEditor::setObject(QObject *object)
                 QtVariantProperty *groupProperty = nullptr;
 
                 if (newProperty) {
-                    QMap<QString, QtVariantProperty*>::const_iterator itPrev(m_nameToProperty.insert(propertyName, property));
+                    auto itPrev = m_nameToProperty.insert(propertyName, property);
                     m_propertyToGroup[property] = groupName;
                     if (m_sorting) {
                         QtProperty *previous = nullptr;
-                        if (itPrev != m_nameToProperty.constBegin())
+                        if (itPrev != m_nameToProperty.begin())
                             previous = (--itPrev).value();
                         m_currentBrowser->insertProperty(property, previous);
                     }
                 }
-                const QMap<QString, QtVariantProperty*>::const_iterator gnit = m_nameToGroup.constFind(groupName);
+                const auto gnit = m_nameToGroup.constFind(groupName);
                 if (gnit != m_nameToGroup.constEnd()) {
                     groupProperty = gnit.value();
                 } else {
@@ -1078,11 +1069,11 @@ void PropertyEditor::setObject(QObject *object)
                 updateBrowserValue(property, value);
 
                 property->setModified(m_propertySheet->isChanged(i));
-                if (propertyName == QStringLiteral("geometry") && type == QMetaType::QRect) {
+                if (propertyName == "geometry"_L1 && type == QMetaType::QRect) {
                     const auto &subProperties = property->subProperties();
                     for (QtProperty *subProperty : subProperties) {
                         const QString subPropertyName = subProperty->propertyName();
-                        if (subPropertyName == QStringLiteral("X") || subPropertyName == QStringLiteral("Y"))
+                        if (subPropertyName == "X"_L1 || subPropertyName == "Y"_L1)
                             subProperty->setEnabled(!isMainContainer);
                     }
                 }

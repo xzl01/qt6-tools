@@ -117,7 +117,7 @@ IntType MetaEnum<IntType>::keyToValue(QString key, bool *ok) const
 {
     if (!m_scope.isEmpty() && key.startsWith(m_scope))
         key.remove(0, m_scope.size() + m_separator.size());
-    const typename KeyToValueMap::const_iterator it = m_keyToValueMap.find(key);
+    const auto it = m_keyToValueMap.find(key);
     const bool found = it != m_keyToValueMap.constEnd();
     if (ok)
         *ok = found;
@@ -442,6 +442,12 @@ private:
     QWidget *m_widget;
     const bool m_enabled;
 };
+
+// QPalette helpers: Mask for a single color role/group
+QDESIGNER_SHARED_EXPORT quint64 paletteResolveMask(QPalette::ColorGroup colorGroup,
+                                                   QPalette::ColorRole colorRole);
+// Mask for the colors of a role in all groups (Active/Inactive/Disabled)
+QDESIGNER_SHARED_EXPORT quint64 paletteResolveMask(QPalette::ColorRole colorRole);
 
 namespace Utils {
 

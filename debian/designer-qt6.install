@@ -1,2 +1,5 @@
+usr/lib/${DEB_HOST_MULTIARCH}/qt6/plugins/designer/libcontainerextension.so
+usr/lib/${DEB_HOST_MULTIARCH}/qt6/plugins/designer/libcustomwidgetplugin.so
 usr/lib/${DEB_HOST_MULTIARCH}/qt6/plugins/designer/libqquickwidget.so
+usr/lib/${DEB_HOST_MULTIARCH}/qt6/plugins/designer/libtaskmenuextension.so
 usr/lib/qt6/bin/designer

@@ -30,6 +30,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace {
     enum { DataRole = 1000 };
 }
@@ -89,7 +91,7 @@ namespace qdesigner_internal {
     };
 
     ModelRecursionContext::ModelRecursionContext(QDesignerFormEditorInterface *c, const QString &sepName) :
-        designerPrefix(QStringLiteral("QDesigner")),
+        designerPrefix(u"QDesigner"_s),
         separator(sepName),
         core(c),
         db(c->widgetDataBase()),
@@ -113,7 +115,7 @@ namespace qdesigner_internal {
     ObjectData::ObjectData(QObject *parent, QObject *object, const ModelRecursionContext &ctx) :
        m_parent(parent),
        m_object(object),
-       m_className(QLatin1String(object->metaObject()->className())),
+       m_className(QLatin1StringView(object->metaObject()->className())),
        m_objectName(object->objectName())
     {
 
@@ -159,7 +161,7 @@ namespace qdesigner_internal {
             if (const QLayout *layout = w->layout()) {
                 m_type = LayoutWidget;
                 m_managedLayoutType = LayoutInfo::layoutType(ctx.core, layout);
-                m_className = QLatin1String(layout->metaObject()->className());
+                m_className = QLatin1StringView(layout->metaObject()->className());
                 m_objectName = layout->objectName();
             }
             return;
@@ -307,13 +309,13 @@ namespace qdesigner_internal {
         setColumnCount(NumColumns);
         setHorizontalHeaderLabels(headers);
         // Icons
-        m_icons.layoutIcons[LayoutInfo::NoLayout] = createIconSet(QStringLiteral("editbreaklayout.png"));
-        m_icons.layoutIcons[LayoutInfo::HSplitter] = createIconSet(QStringLiteral("edithlayoutsplit.png"));
-        m_icons.layoutIcons[LayoutInfo::VSplitter] = createIconSet(QStringLiteral("editvlayoutsplit.png"));
-        m_icons.layoutIcons[LayoutInfo::HBox] = createIconSet(QStringLiteral("edithlayout.png"));
-        m_icons.layoutIcons[LayoutInfo::VBox] = createIconSet(QStringLiteral("editvlayout.png"));
-        m_icons.layoutIcons[LayoutInfo::Grid] = createIconSet(QStringLiteral("editgrid.png"));
-        m_icons.layoutIcons[LayoutInfo::Form] = createIconSet(QStringLiteral("editform.png"));
+        m_icons.layoutIcons[LayoutInfo::NoLayout] = createIconSet(u"editbreaklayout.png"_s);
+        m_icons.layoutIcons[LayoutInfo::HSplitter] = createIconSet(u"edithlayoutsplit.png"_s);
+        m_icons.layoutIcons[LayoutInfo::VSplitter] = createIconSet(u"editvlayoutsplit.png"_s);
+        m_icons.layoutIcons[LayoutInfo::HBox] = createIconSet(u"edithlayout.png"_s);
+        m_icons.layoutIcons[LayoutInfo::VBox] = createIconSet(u"editvlayout.png"_s);
+        m_icons.layoutIcons[LayoutInfo::Grid] = createIconSet(u"editgrid.png"_s);
+        m_icons.layoutIcons[LayoutInfo::Form] = createIconSet(u"editform.png"_s);
     }
 
     void ObjectInspectorModel::clearItems()
@@ -381,8 +383,8 @@ namespace qdesigner_internal {
         if (newModel.isEmpty())
             return;
 
-        const ObjectModel::const_iterator mcend = newModel.constEnd();
-        ObjectModel::const_iterator it = newModel.constBegin();
+        const auto mcend = newModel.cend();
+        auto it = newModel.cbegin();
         // Set up root element
         StandardItemList rootRow = createModelRow(it->object());
         it->setItems(rootRow, m_icons);
@@ -409,10 +411,10 @@ namespace qdesigner_internal {
 
         QObjectSet changedObjects;
 
-        const int size = newModel.size();
+        const auto size = newModel.size();
         Q_ASSERT(oldModel.size() ==  size);
-        for (int i = 0; i < size; i++) {
-            const ObjectData &newEntry = newModel[i];
+        for (qsizetype i = 0; i < size; ++i) {
+            const ObjectData &newEntry = newModel.at(i);
             ObjectData &entry =  oldModel[i];
             // Has some data changed?
             if (const unsigned changedMask = entry.compare(newEntry)) {
@@ -452,7 +454,7 @@ namespace qdesigner_internal {
         if (!object)
             return false;
         // Is this a layout widget?
-        const QString nameProperty = isQLayoutWidget(object) ? QStringLiteral("layoutName") : QStringLiteral("objectName");
+        const QString nameProperty = isQLayoutWidget(object) ? u"layoutName"_s : u"objectName"_s;
         m_formWindow->commandHistory()->push(createTextPropertyCommand(nameProperty, value.toString(), object, m_formWindow));
         return true;
     }

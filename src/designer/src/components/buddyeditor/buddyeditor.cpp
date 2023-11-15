@@ -28,7 +28,9 @@
 
 QT_BEGIN_NAMESPACE
 
-static const char *buddyPropertyC = "buddy";
+using namespace Qt::StringLiterals;
+
+static const char buddyPropertyC[] = "buddy";
 
 static bool canBeBuddy(QWidget *w, QDesignerFormWindowInterface *form)
 {
@@ -39,7 +41,7 @@ static bool canBeBuddy(QWidget *w, QDesignerFormWindowInterface *form)
 
     QExtensionManager *ext = form->core()->extensionManager();
     if (QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(ext, w)) {
-        const int index = sheet->indexOf(QStringLiteral("focusPolicy"));
+        const int index = sheet->indexOf(u"focusPolicy"_s);
         if (index != -1) {
             bool ok = false;
             const Qt::FocusPolicy q = static_cast<Qt::FocusPolicy>(qdesigner_internal::Utils::valueOf(sheet->property(index), &ok));
@@ -55,7 +57,7 @@ static QString buddy(QLabel *label, QDesignerFormEditorInterface *core)
     QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core->extensionManager(), label);
     if (sheet == nullptr)
         return QString();
-    const int prop_idx = sheet->indexOf(QLatin1String(buddyPropertyC));
+    const int prop_idx = sheet->indexOf(QLatin1StringView(buddyPropertyC));
     if (prop_idx == -1)
         return QString();
     return sheet->property(prop_idx).toString();
@@ -209,7 +211,7 @@ void BuddyEditor::setBackground(QWidget *background)
 static QUndoCommand *createBuddyCommand(QDesignerFormWindowInterface *fw, QLabel *label, QWidget *buddy)
 {
     SetPropertyCommand *command = new SetPropertyCommand(fw);
-    command->init(label, QLatin1String(buddyPropertyC), buddy->objectName());
+    command->init(label, QLatin1StringView(buddyPropertyC), buddy->objectName());
     command->setText(BuddyEditor::tr("Add buddy"));
     return command;
 }
@@ -271,7 +273,7 @@ void BuddyEditor::widgetRemoved(QWidget *widget)
                 qDebug("BuddyConnection::widgetRemoved(): not a label");
             } else {
                 ResetPropertyCommand *command = new ResetPropertyCommand(formWindow());
-                command->init(source, QLatin1String(buddyPropertyC));
+                command->init(source, QLatin1StringView(buddyPropertyC));
                 undoStack()->push(command);
             }
             delete takeConnection(con);
@@ -295,7 +297,7 @@ void BuddyEditor::deleteSelected()
             qDebug("BuddyConnection::deleteSelected(): not a label");
         } else {
             ResetPropertyCommand *command = new ResetPropertyCommand(formWindow());
-            command->init(source, QLatin1String(buddyPropertyC));
+            command->init(source, QLatin1StringView(buddyPropertyC));
             undoStack()->push(command);
         }
         delete takeConnection(con);
@@ -335,10 +337,10 @@ void BuddyEditor::autoBuddy()
     // Add the list in one go.
     if (labelList.isEmpty())
         return;
-    const int count = labelList.size();
+    const auto count = labelList.size();
     Q_ASSERT(count == buddies.size());
     undoStack()->beginMacro(tr("Add %n buddies", nullptr, count));
-    for (int i = 0; i < count; i++)
+    for (qsizetype i = 0; i < count; ++i)
         undoStack()->push(createBuddyCommand(m_formWindow, labelList.at(i), buddies.at(i)));
     undoStack()->endMacro();
     // Now select all new ones

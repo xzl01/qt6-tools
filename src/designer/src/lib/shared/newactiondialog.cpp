@@ -12,9 +12,12 @@
 #include <QtDesigner/abstractformwindow.h>
 #include <QtDesigner/abstractformeditor.h>
 
+#include <QtCore/QMetaEnum>
 #include <QtWidgets/qpushbutton.h>
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 namespace qdesigner_internal {
 // Returns a combination of ChangeMask flags
@@ -33,6 +36,8 @@ unsigned ActionData::compare(const ActionData &rhs) const
         rc |= CheckableChanged;
     if (keysequence != rhs.keysequence)
         rc |= KeysequenceChanged ;
+    if (menuRole.value != rhs.menuRole.value)
+        rc |= MenuRoleChanged ;
     return rc;
 }
 
@@ -47,12 +52,22 @@ NewActionDialog::NewActionDialog(ActionEditor *parent) :
 
     m_ui->tooltipEditor->setTextPropertyValidationMode(ValidationRichText);
     connect(m_ui->toolTipToolButton, &QAbstractButton::clicked, this, &NewActionDialog::slotEditToolTip);
+    connect(m_ui->editActionText, &QLineEdit::textEdited,
+            this, &NewActionDialog::onEditActionTextTextEdited);
+    connect(m_ui->editObjectName, &QLineEdit::textEdited,
+            this, &NewActionDialog::onEditObjectNameTextEdited);
 
-    m_ui->keysequenceResetToolButton->setIcon(createIconSet(QStringLiteral("resetproperty.png")));
+    m_ui->keysequenceResetToolButton->setIcon(createIconSet(u"resetproperty.png"_s));
     connect(m_ui->keysequenceResetToolButton, &QAbstractButton::clicked,
             this, &NewActionDialog::slotResetKeySequence);
 
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+    const auto menuRoles = QMetaEnum::fromType<QAction::MenuRole>();
+    for (int i = 0; i < menuRoles.keyCount(); i++) {
+        const auto key = menuRoles.key(i);
+        const auto value = menuRoles.value(i);
+        m_ui->menuRole->addItem(QLatin1StringView(key), value);
+    }
+
     focusText();
     updateButtons();
 
@@ -96,6 +111,11 @@ void NewActionDialog::focusCheckable()
     m_ui->checkableCheckBox->setFocus();
 }
 
+void NewActionDialog::focusMenuRole()
+{
+    m_ui->menuRole->setFocus();
+}
+
 QString NewActionDialog::actionText() const
 {
     return m_ui->editActionText->text();
@@ -116,6 +136,7 @@ ActionData NewActionDialog::actionData() const
     rc.icon.setTheme(m_ui->iconThemeEditor->theme());
     rc.checkable = m_ui->checkableCheckBox->checkState() == Qt::Checked;
     rc.keysequence = PropertySheetKeySequenceValue(m_ui->keySequenceEdit->keySequence());
+    rc.menuRole.value = m_ui->menuRole->currentData().toInt();
     return rc;
 }
 
@@ -128,13 +149,14 @@ void NewActionDialog::setActionData(const ActionData &d)
     m_ui->tooltipEditor->setText(d.toolTip);
     m_ui->keySequenceEdit->setKeySequence(d.keysequence.value());
     m_ui->checkableCheckBox->setCheckState(d.checkable ? Qt::Checked : Qt::Unchecked);
+    m_ui->menuRole->setCurrentIndex(m_ui->menuRole->findData(d.menuRole.value));
 
     // Suppress updating of the object name from the text for existing actions.
     m_autoUpdateObjectName = d.name.isEmpty();
     updateButtons();
 }
 
-void NewActionDialog::on_editActionText_textEdited(const QString &text)
+void NewActionDialog::onEditActionTextTextEdited(const QString &text)
 {
     if (m_autoUpdateObjectName)
         m_ui->editObjectName->setText(ActionEditor::actionTextToName(text));
@@ -142,7 +164,7 @@ void NewActionDialog::on_editActionText_textEdited(const QString &text)
     updateButtons();
 }
 
-void NewActionDialog::on_editObjectName_textEdited(const QString&)
+void NewActionDialog::onEditObjectNameTextEdited(const QString&)
 {
     updateButtons();
     m_autoUpdateObjectName = false;

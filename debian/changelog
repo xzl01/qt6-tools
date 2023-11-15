@@ -1,8 +1,23 @@
-qt6-tools (6.4.2-3deepin) unstable; urgency=medium
+qt6-tools (6.6.0-2) experimental; urgency=medium
 
-  * Relax llvm and clang to use 14.
+  * Team upload.
+  * Update documentation install list, there is now a dark CSS file.
+  * Update symbols files with current buildds' logs.
 
- -- Tianyu Chen <sweetyfish@deepin.org>  Mon, 07 Aug 2023 14:27:16 +0800
+ -- Lisandro Damián Nicanor Pérez Meyer <lisandro@debian.org>  Thu, 09 Nov 2023 22:25:22 -0300
+
+qt6-tools (6.6.0-1) experimental; urgency=medium
+
+  [ Patrick Franz ]
+  * New upstream release (6.6.0).
+  * Bump Qt B-Ds to 6.6.0.
+  * Update ABI to 6.6.0.
+  * Update build-deps and deps with the info from cmake.
+  * Update list of installed files.
+  * Update symbols from buildlogs.
+  * Update lintian-overrides.
+
+ -- Patrick Franz <deltaone@debian.org>  Sat, 28 Oct 2023 14:50:45 +0200
 
 qt6-tools (6.4.2-3) unstable; urgency=medium
 

@@ -324,34 +324,34 @@ bool Translator::save(const QString &filename, ConversionData &cd, const QString
     return false;
 }
 
-QString Translator::makeLanguageCode(QLocale::Language language, QLocale::Country country)
+QString Translator::makeLanguageCode(QLocale::Language language, QLocale::Territory territory)
 {
     QString result = QLocale::languageToCode(language);
-    if (language != QLocale::C && country != QLocale::AnyCountry) {
+    if (language != QLocale::C && territory != QLocale::AnyTerritory) {
         result.append(QLatin1Char('_'));
-        result.append(QLocale::countryToCode(country));
+        result.append(QLocale::territoryToCode(territory));
     }
     return result;
 }
 
-void Translator::languageAndCountry(QStringView languageCode, QLocale::Language *langPtr,
-                                    QLocale::Country *countryPtr)
+void Translator::languageAndTerritory(QStringView languageCode, QLocale::Language *langPtr,
+                                    QLocale::Territory *territoryPtr)
 {
     QLocale::Language language = QLocale::AnyLanguage;
-    QLocale::Country country = QLocale::AnyCountry;
+    QLocale::Territory territory = QLocale::AnyTerritory;
     const auto underScore = languageCode.indexOf(u'_'); // "de_DE"
     if (underScore != -1) {
         language = QLocale::codeToLanguage(languageCode.left(underScore));
-        country = QLocale::codeToCountry(languageCode.mid(underScore + 1));
+        territory = QLocale::codeToTerritory(languageCode.mid(underScore + 1));
     } else {
         language = QLocale::codeToLanguage(languageCode);
-        country = QLocale(language).country();
+        territory = QLocale(language).territory();
     }
 
     if (langPtr)
         *langPtr = language;
-    if (countryPtr)
-        *countryPtr = country;
+    if (territoryPtr)
+        *territoryPtr = territory;
 }
 
 int Translator::find(const TranslatorMessage &msg) const
@@ -562,7 +562,7 @@ Translator::Duplicates Translator::resolveDuplicates()
         const TranslatorMessage &msg = m_messages.at(i);
         TranslatorMessage *omsg;
         int oi;
-        QSet<int> *pDup;
+        DuplicateEntries *pDup;
         if (!msg.id().isEmpty()) {
             const auto it = idRefs.constFind(TranslatorMessageIdPtr(this, i));
             if (it != idRefs.constEnd()) {
@@ -594,7 +594,7 @@ Translator::Duplicates Translator::resolveDuplicates()
         ++i;
         continue;
       gotDupe:
-        pDup->insert(oi);
+        (*pDup)[oi].append(msg.tsLineNumber());
         if (!omsg->isTranslated() && msg.isTranslated())
             omsg->setTranslations(msg.translations());
         m_indexOk = false;
@@ -612,16 +612,32 @@ void Translator::reportDuplicates(const Duplicates &dupes,
             std::cerr << "'\n(try -verbose for more info).\n";
         } else {
             std::cerr << "':\n";
-            for (int i : dupes.byId)
-                std::cerr << "\n* ID: " << qPrintable(message(i).id()) << std::endl;
-            for (int j : dupes.byContents) {
-                const TranslatorMessage &msg = message(j);
+            for (auto it = dupes.byId.begin(); it != dupes.byId.end(); ++it) {
+                const TranslatorMessage &msg = message(it.key());
+                std::cerr << "\n* ID: " << qPrintable(msg.id()) << std::endl;
+                reportDuplicatesLines(msg, it.value());
+            }
+            for (auto it = dupes.byContents.begin(); it != dupes.byContents.end(); ++it) {
+                const TranslatorMessage &msg = message(it.key());
                 std::cerr << "\n* Context: " << qPrintable(msg.context())
                           << "\n* Source: " << qPrintable(msg.sourceText()) << std::endl;
                 if (!msg.comment().isEmpty())
                     std::cerr << "* Comment: " << qPrintable(msg.comment()) << std::endl;
+                reportDuplicatesLines(msg, it.value());
             }
             std::cerr << std::endl;
+        }
+    }
+}
+
+void Translator::reportDuplicatesLines(const TranslatorMessage &msg,
+                                       const DuplicateEntries::value_type &dups) const
+{
+    if (msg.tsLineNumber() >= 0) {
+        std::cerr << "* Line in .ts file: " << msg.tsLineNumber() << std::endl;
+        for (int tsLineNumber : dups) {
+            if (tsLineNumber >= 0)
+                std::cerr << "* Duplicate at line: " << tsLineNumber << std::endl;
         }
     }
 }
@@ -668,8 +684,8 @@ void Translator::normalizeTranslations(ConversionData &cd)
 {
     bool truncated = false;
     QLocale::Language l;
-    QLocale::Country c;
-    languageAndCountry(languageCode(), &l, &c);
+    QLocale::Territory c;
+    languageAndTerritory(languageCode(), &l, &c);
     int numPlurals = 1;
     if (l != QLocale::C) {
         QStringList forms;

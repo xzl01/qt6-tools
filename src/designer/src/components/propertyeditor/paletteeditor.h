@@ -34,12 +34,12 @@ public:
 
 private slots:
 
-    void on_buildButton_colorChanged(const QColor &);
-    void on_activeRadio_clicked();
-    void on_inactiveRadio_clicked();
-    void on_disabledRadio_clicked();
-    void on_computeRadio_clicked();
-    void on_detailsRadio_clicked();
+    void buildButtonColorChanged();
+    void activeRadioClicked();
+    void inactiveRadioClicked();
+    void disabledRadioClicked();
+    void computeRadioClicked();
+    void detailsRadioClicked();
 
     void paletteChanged(const QPalette &palette);
     void viewContextMenuRequested(const QPoint &pos);
@@ -96,6 +96,9 @@ public:
 
     QPalette::ColorRole colorRole() const { return QPalette::NoRole; }
     void setCompute(bool on) { m_compute = on; }
+
+    quint64 rowMask(const QModelIndex &index) const;
+
 signals:
     void paletteChanged(const QPalette &palette);
 private:

@@ -31,13 +31,15 @@
 #include <QtCore/qhash.h>
 #include <QtCore/qdebug.h>
 
-static const char *buddyPropertyC = "buddy";
+static const char buddyPropertyC[] = "buddy";
 static const char *fieldWidgetBaseClasses[] = {
     "QLineEdit", "QComboBox", "QSpinBox", "QDoubleSpinBox", "QCheckBox",
     "QDateEdit", "QTimeEdit", "QDateTimeEdit", "QDial", "QWidget"
 };
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 namespace qdesigner_internal {
 
@@ -93,7 +95,7 @@ private:
     // Check for buddy marker in string
     const QRegularExpression m_buddyMarkerRegexp;
 
-    Ui::FormLayoutRowDialog m_ui;
+    QT_PREPEND_NAMESPACE(Ui)::FormLayoutRowDialog m_ui;
     bool m_labelNameEdited;
     bool m_fieldNameEdited;
     bool m_buddyClicked;
@@ -102,19 +104,18 @@ private:
 FormLayoutRowDialog::FormLayoutRowDialog(QDesignerFormEditorInterface *core,
                                          QWidget *parent) :
     QDialog(parent),
-    m_buddyMarkerRegexp(QStringLiteral("\\&[^&]")),
+    m_buddyMarkerRegexp(u"\\&[^&]"_s),
     m_labelNameEdited(false),
     m_fieldNameEdited(false),
     m_buddyClicked(false)
 {
     Q_ASSERT(m_buddyMarkerRegexp.isValid());
 
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     setModal(true);
     m_ui.setupUi(this);
     connect(m_ui.labelTextLineEdit, &QLineEdit::textEdited, this, &FormLayoutRowDialog::labelTextEdited);
 
-    QRegularExpressionValidator *nameValidator = new QRegularExpressionValidator(QRegularExpression(QStringLiteral("^[a-zA-Z0-9_]+$")), this);
+    auto *nameValidator = new QRegularExpressionValidator(QRegularExpression(u"^[a-zA-Z0-9_]+$"_s), this);
     Q_ASSERT(nameValidator->regularExpression().isValid());
 
     m_ui.labelNameLineEdit->setValidator(nameValidator);
@@ -215,11 +216,11 @@ void FormLayoutRowDialog::labelTextEdited(const QString &text)
 // "namespace::QLineEdit"->"LineEdit"
 static inline QString postFixFromClassName(QString className)
 {
-    const int index = className.lastIndexOf(QStringLiteral("::"));
+    const int index = className.lastIndexOf("::"_L1);
     if (index != -1)
         className.remove(0, index + 2);
     if (className.size() > 2)
-        if (className.at(0) == QLatin1Char('Q') || className.at(0) == QLatin1Char('K'))
+        if (className.at(0) == u'Q' || className.at(0) == u'K')
             if (className.at(1).isUpper())
                 className.remove(0, 1);
     return className;
@@ -265,10 +266,8 @@ static inline PrefixCharacterKind prefixCharacterKind(const QChar &c)
 static QString prefixFromLabel(const QString &prefix)
 {
     QString rc;
-    const int length = prefix.size();
     bool lastWasAcceptable = false;
-    for (int i = 0 ; i < length; i++) {
-        const QChar c = prefix.at(i);
+    for (const QChar &c : prefix) {
         const PrefixCharacterKind kind = prefixCharacterKind(c);
         const bool acceptable = kind != PC_Invalid;
         if (acceptable) {
@@ -298,7 +297,7 @@ void FormLayoutRowDialog::updateObjectNames(bool updateLabel, bool updateField)
     const QString prefix = prefixFromLabel(labelText());
     // Set names
     if (doUpdateLabel)
-        m_ui.labelNameLineEdit->setText(prefix + QStringLiteral("Label"));
+        m_ui.labelNameLineEdit->setText(prefix + "Label"_L1);
     if (doUpdateField)
         m_ui.fieldNameLineEdit->setText(prefix + postFixFromClassName(fieldClass()));
 }
@@ -331,19 +330,16 @@ void FormLayoutRowDialog::buddyClicked()
  * from them ("QLineEdit", "CustomLineEdit", "QComboBox"...). */
 QStringList FormLayoutRowDialog::fieldWidgetClasses(QDesignerFormEditorInterface *core)
 {
-    // Base class -> custom widgets map
-    typedef QMultiHash<QString, QString> ClassMap;
-
     static QStringList rc;
     if (rc.isEmpty()) {
         // Turn known base classes into list
         QStringList baseClasses;
         for (auto fw : fieldWidgetBaseClasses)
-            baseClasses.append(QLatin1String(fw));
+            baseClasses.append(QLatin1StringView(fw));
         // Scan for custom widgets that inherit them and store them in a
         // multimap of base class->custom widgets unless we have a language
         // extension installed which might do funny things with custom widgets.
-        ClassMap customClassMap;
+        QMultiHash<QString, QString> customClassMap; // Base class -> custom widgets map
         if (qt_extension<QDesignerLanguageExtension *>(core->extensionManager(), core) == nullptr) {
             const QDesignerWidgetDataBaseInterface *wdb = core->widgetDataBase();
             const int wdbCount = wdb->count();
@@ -387,16 +383,16 @@ static QPair<QWidget *,QWidget *>
     QDesignerFormEditorInterface *core = formWindow->core();
     QDesignerWidgetFactoryInterface *wf = core->widgetFactory();
 
-    QPair<QWidget *,QWidget *> rc = QPair<QWidget *,QWidget *>(wf->createWidget(QStringLiteral("QLabel"), parent),
-                                                               wf->createWidget(row.fieldClassName, parent));
+    QPair<QWidget *,QWidget *> rc{wf->createWidget(u"QLabel"_s, parent),
+                                  wf->createWidget(row.fieldClassName, parent)};
     // Set up properties of the label
-    const QString objectNameProperty = QStringLiteral("objectName");
+    const QString objectNameProperty = u"objectName"_s;
     QDesignerPropertySheetExtension *labelSheet = qt_extension<QDesignerPropertySheetExtension*>(core->extensionManager(), rc.first);
     int nameIndex = labelSheet->indexOf(objectNameProperty);
     labelSheet->setProperty(nameIndex, QVariant::fromValue(PropertySheetStringValue(row.labelName)));
     labelSheet->setChanged(nameIndex, true);
     formWindow->ensureUniqueObjectName(rc.first);
-    const int textIndex = labelSheet->indexOf(QStringLiteral("text"));
+    const int textIndex = labelSheet->indexOf(u"text"_s);
     labelSheet->setProperty(textIndex, QVariant::fromValue(PropertySheetStringValue(row.labelText)));
     labelSheet->setChanged(textIndex, true);
     // Set up properties of the control
@@ -430,7 +426,7 @@ static void addFormLayoutRow(const FormLayoutRow &formLayoutRow, int row, QWidge
     undoStack->push(controlCmd);
     if (formLayoutRow.buddy) {
         SetPropertyCommand *buddyCommand = new SetPropertyCommand(formWindow);
-        buddyCommand->init(widgetPair.first, QLatin1String(buddyPropertyC), widgetPair.second->objectName());
+        buddyCommand->init(widgetPair.first, QLatin1StringView(buddyPropertyC), widgetPair.second->objectName());
         undoStack->push(buddyCommand);
     }
     undoStack->endMacro();

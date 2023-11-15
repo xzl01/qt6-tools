@@ -22,10 +22,13 @@
 #  include <QtGui/QClipboard>
 #endif
 
+#include <QtCore/qdir.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qpluginloader.h>
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 enum { ErrorItemRole = Qt::UserRole + 1 };
 
@@ -84,7 +87,7 @@ void PluginDialog::populateTreeWidget()
             QPluginLoader loader(fileName);
             const QFileInfo fileInfo(fileName);
 
-            QTreeWidgetItem *pluginItem = setPluginItem(topLevelItem, fileInfo.fileName(), boldFont);
+            QTreeWidgetItem *pluginItem = setPluginItem(topLevelItem, fileInfo, boldFont);
 
             if (QObject *plugin = loader.instance()) {
                 if (const QDesignerCustomWidgetCollectionInterface *c = qobject_cast<QDesignerCustomWidgetCollectionInterface*>(plugin)) {
@@ -105,10 +108,10 @@ void PluginDialog::populateTreeWidget()
         const QFont boldFont = topLevelItem->font(0);
         for (const QString &plugin : notLoadedPlugins) {
             const QString failureReason = pluginManager->failureReason(plugin);
-            const QString htmlFailureReason = QLatin1String("<html><head/><body><p>")
+            const QString htmlFailureReason = "<html><head/><body><p>"_L1
                 + failureReason.toHtmlEscaped()
-                + QLatin1String("</p></body></html>");
-            QTreeWidgetItem *pluginItem = setPluginItem(topLevelItem, plugin, boldFont);
+                + "</p></body></html>"_L1;
+            QTreeWidgetItem *pluginItem = setPluginItem(topLevelItem, QFileInfo(plugin), boldFont);
             auto errorItem = setItem(pluginItem, failureReason,
                                      htmlFailureReason, QString(), QIcon());
             errorItem->setData(0, ErrorItemRole, QVariant(true));
@@ -138,11 +141,15 @@ QTreeWidgetItem* PluginDialog::setTopLevelItem(const QString &itemName)
 }
 
 QTreeWidgetItem* PluginDialog::setPluginItem(QTreeWidgetItem *topLevelItem,
-                                             const QString &itemName, const QFont &font)
+                                             const QFileInfo &file, const QFont &font)
 {
     QTreeWidgetItem *pluginItem = new QTreeWidgetItem(topLevelItem);
+    QString toolTip = QDir::toNativeSeparators(file.absoluteFilePath());
+    if (file.exists())
+        toolTip += u'\n' + file.lastModified().toString();
     pluginItem->setFont(0, font);
-    pluginItem->setText(0, itemName);
+    pluginItem->setText(0, file.fileName());
+    pluginItem->setToolTip(0, toolTip);
     pluginItem->setExpanded(true);
     pluginItem->setIcon(0, style()->standardPixmap(QStyle::SP_DirOpenIcon));
 

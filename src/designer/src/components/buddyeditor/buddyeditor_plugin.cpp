@@ -12,7 +12,9 @@
 
 QT_BEGIN_NAMESPACE
 
-using namespace qdesigner_internal;
+using namespace Qt::StringLiterals;
+
+namespace qdesigner_internal {
 
 BuddyEditorPlugin::BuddyEditorPlugin() = default;
 
@@ -28,9 +30,9 @@ void BuddyEditorPlugin::initialize(QDesignerFormEditorInterface *core)
     Q_ASSERT(!isInitialized());
 
     m_action = new QAction(tr("Edit Buddies"), this);
-    m_action->setObjectName(QStringLiteral("__qt_edit_buddies_action"));
-    QIcon buddyIcon = QIcon::fromTheme(QStringLiteral("designer-edit-buddy"),
-                                       QIcon(core->resourceLocation() + QStringLiteral("/buddytool.png")));
+    m_action->setObjectName(u"__qt_edit_buddies_action"_s);
+    QIcon buddyIcon = QIcon::fromTheme(u"designer-edit-buddy"_s,
+                                       QIcon(core->resourceLocation() + "/buddytool.png"_L1));
     m_action->setIcon(buddyIcon);
     m_action->setEnabled(false);
 
@@ -86,5 +88,7 @@ void BuddyEditorPlugin::activeFormWindowChanged(QDesignerFormWindowInterface *fo
 {
     m_action->setEnabled(formWindow != nullptr);
 }
+
+} // namespace qdesigner_internal
 
 QT_END_NAMESPACE

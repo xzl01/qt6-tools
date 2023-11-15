@@ -1,4 +1,5 @@
-# Generated from utilities.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
 ## tst_utilities Test:
@@ -6,8 +7,8 @@
 
 qt_internal_add_test(tst_utilities
     SOURCES
-        ../../../../src/qdoc/utilities.cpp ../../../../src/qdoc/utilities.h
+        ${QDOC_SOURCE_DIRECTORY}/utilities.cpp
         tst_utilities.cpp
     INCLUDE_DIRECTORIES
-        ../../../../src/qdoc
+        ${QDOC_INCLUDE_DIRECTORY}
 )

@@ -12,6 +12,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 using WizardPageList = QList<QWizardPage *>;
 
 namespace qdesigner_internal {
@@ -68,7 +70,7 @@ void QWizardContainer::setCurrentIndex(int index)
     }
 }
 
-static const char *msgWrongType = "** WARNING Attempt to add oject that is not of class WizardPage to a QWizard";
+static const char msgWrongType[] = "** WARNING Attempt to add oject that is not of class WizardPage to a QWizard";
 
 void QWizardContainer::addWidget(QWidget *widget)
 {
@@ -93,7 +95,7 @@ void QWizardContainer::insertWidget(int index, QWidget *widget)
     }
 
     const auto idList = m_wizard->pageIds();
-    const int pageCount = idList.size();
+    const auto pageCount = idList.size();
     if (index >= pageCount) {
         addWidget(widget);
         return;
@@ -109,7 +111,7 @@ void QWizardContainer::insertWidget(int index, QWidget *widget)
         // Create a gap by shuffling pages
         WizardPageList pageList;
         pageList.push_back(newPage);
-        for (int i = index; i < pageCount; i++) {
+        for (qsizetype i = index; i < pageCount; ++i) {
             pageList.push_back(m_wizard->page(idList.at(i)));
             m_wizard->removePage(idList.at(i));
         }
@@ -151,7 +153,7 @@ const char *QWizardPagePropertySheet::pageIdProperty = "pageId";
 
 QWizardPagePropertySheet::QWizardPagePropertySheet(QWizardPage *object, QObject *parent) :
     QDesignerPropertySheet(object, parent),
-    m_pageIdIndex(createFakeProperty(QLatin1String(pageIdProperty), QString()))
+    m_pageIdIndex(createFakeProperty(QLatin1StringView(pageIdProperty), QString()))
 {
     setAttribute(m_pageIdIndex, true);
 }
@@ -168,7 +170,7 @@ bool QWizardPagePropertySheet::reset(int index)
 // ---------------- QWizardPropertySheet
 QWizardPropertySheet::QWizardPropertySheet(QWizard *object, QObject *parent) :
     QDesignerPropertySheet(object, parent),
-    m_startId(QStringLiteral("startId"))
+    m_startId(u"startId"_s)
 {
 }
 

@@ -1,16 +1,19 @@
-# Generated from qdoccommandlineparser.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
+
 
 #####################################################################
 ## tst_qdoccommandlineparser Test:
 #####################################################################
 
 qt_internal_add_test(tst_qdoccommandlineparser
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" # special case
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     SOURCES
-        ../../../../src/qdoc/qdoccommandlineparser.cpp ../../../../src/qdoc/qdoccommandlineparser.h
+        ${QDOC_SOURCE_DIRECTORY}/qdoccommandlineparser.cpp
+        ${QDOC_SOURCE_DIRECTORY}/utilities.cpp
         tst_qdoccommandlineparser.cpp
     INCLUDE_DIRECTORIES
-        ../../../../src/qdoc
+        ${QDOC_INCLUDE_DIRECTORY}
 )
 
 # Resources:

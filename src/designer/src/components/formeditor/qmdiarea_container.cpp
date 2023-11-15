@@ -14,6 +14,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 QMdiAreaContainer::QMdiAreaContainer(QMdiArea *widget, QObject *parent)
@@ -104,15 +106,15 @@ void QMdiAreaContainer::remove(int index)
 // 1) window name (object name of child)
 // 2) title (windowTitle of child).
 
-static const char *subWindowTitleC = "activeSubWindowTitle";
-static const char *subWindowNameC = "activeSubWindowName";
+static const char subWindowTitleC[] = "activeSubWindowTitle";
+static const char subWindowNameC[] = "activeSubWindowName";
 
 QMdiAreaPropertySheet::QMdiAreaPropertySheet(QWidget *mdiArea, QObject *parent) :
     QDesignerPropertySheet(mdiArea, parent),
-    m_windowTitleProperty(QStringLiteral("windowTitle"))
+    m_windowTitleProperty(u"windowTitle"_s)
 {
-    createFakeProperty(QLatin1String(subWindowNameC), QString());
-    createFakeProperty(QLatin1String(subWindowTitleC), QString());
+    createFakeProperty(QLatin1StringView(subWindowNameC), QString());
+    createFakeProperty(QLatin1StringView(subWindowTitleC), QString());
 }
 
 QMdiAreaPropertySheet::MdiAreaProperty QMdiAreaPropertySheet::mdiAreaProperty(const QString &name)
@@ -120,8 +122,8 @@ QMdiAreaPropertySheet::MdiAreaProperty QMdiAreaPropertySheet::mdiAreaProperty(co
     using MdiAreaPropertyHash = QHash<QString, MdiAreaProperty>;
     static MdiAreaPropertyHash mdiAreaPropertyHash;
     if (mdiAreaPropertyHash.isEmpty()) {
-        mdiAreaPropertyHash.insert(QLatin1String(subWindowNameC), MdiAreaSubWindowName);
-        mdiAreaPropertyHash.insert(QLatin1String(subWindowTitleC), MdiAreaSubWindowTitle);
+        mdiAreaPropertyHash.insert(QLatin1StringView(subWindowNameC), MdiAreaSubWindowName);
+        mdiAreaPropertyHash.insert(QLatin1StringView(subWindowTitleC), MdiAreaSubWindowTitle);
     }
     return mdiAreaPropertyHash.value(name,MdiAreaNone);
 }

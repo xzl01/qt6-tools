@@ -23,6 +23,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 #ifdef QFORMINTERNAL_NAMESPACE
 namespace QFormInternal {
 #endif
@@ -44,7 +46,7 @@ QFormBuilderExtra::CustomWidgetData::CustomWidgetData(const DomCustomWidget *dcw
 QFormBuilderExtra::QFormBuilderExtra() :
     m_defaultMargin(INT_MIN),
     m_defaultSpacing(INT_MIN),
-    m_language(QStringLiteral("c++"))
+    m_language(u"c++"_s)
 {
 }
 
@@ -76,7 +78,6 @@ static inline QString msgXmlError(const QXmlStreamReader &reader)
 static bool inline readUiAttributes(QXmlStreamReader &reader, const QString &language,
                                     QString *errorMessage)
 {
-    const QString uiElement = QStringLiteral("ui");
     // Read up to first element
     while (!reader.atEnd()) {
         switch (reader.readNext()) {
@@ -84,9 +85,9 @@ static bool inline readUiAttributes(QXmlStreamReader &reader, const QString &lan
             *errorMessage = msgXmlError(reader);
             return false;
         case QXmlStreamReader::StartElement:
-            if (reader.name().compare(uiElement, Qt::CaseInsensitive) == 0) {
-                const QString versionAttribute = QStringLiteral("version");
-                const QString languageAttribute = QStringLiteral("language");
+            if (reader.name().compare("ui"_L1, Qt::CaseInsensitive) == 0) {
+                const QString versionAttribute = u"version"_s;
+                const QString languageAttribute = u"language"_s;
                 const QXmlStreamAttributes attributes = reader.attributes();
                 if (attributes.hasAttribute(versionAttribute)) {
                     const QVersionNumber version =
@@ -160,11 +161,7 @@ bool QFormBuilderExtra::applyPropertyInternally(QObject *o, const QString &prope
 
 void QFormBuilderExtra::applyInternalProperties() const
 {
-    if (m_buddies.isEmpty())
-        return;
-
-    const BuddyHash::const_iterator cend = m_buddies.constEnd();
-    for (BuddyHash::const_iterator it = m_buddies.constBegin(); it != cend; ++it )
+    for (auto it = m_buddies.cbegin(), cend = m_buddies.cend(); it != cend; ++it )
         applyBuddy(it.value(), BuddyApplyAll, it.key());
 }
 
@@ -181,10 +178,9 @@ bool QFormBuilderExtra::applyBuddy(const QString &buddyName, BuddyMode applyMode
         return false;
     }
 
-    const QWidgetList::const_iterator cend = widgets.constEnd();
-    for ( QWidgetList::const_iterator it =  widgets.constBegin(); it !=  cend; ++it) {
-        if (applyMode == BuddyApplyAll || !(*it)->isHidden()) {
-            label->setBuddy(*it);
+    for (auto *w : widgets) {
+        if (applyMode == BuddyApplyAll || !w->isHidden()) {
+            label->setBuddy(w);
             return true;
         }
     }
@@ -218,15 +214,15 @@ void QFormBuilderExtra::storeCustomWidgetData(const QString &className, const Do
 
 QString QFormBuilderExtra::customWidgetBaseClass(const QString &className) const
 {
-    const QHash<QString, CustomWidgetData>::const_iterator it = m_customWidgetDataHash.constFind(className);
+    const auto it = m_customWidgetDataHash.constFind(className);
     if (it != m_customWidgetDataHash.constEnd())
-            return it.value().baseClass;
+        return it.value().baseClass;
     return QString();
 }
 
 QString QFormBuilderExtra::customWidgetAddPageMethod(const QString &className) const
 {
-    const QHash<QString, CustomWidgetData>::const_iterator it = m_customWidgetDataHash.constFind(className);
+    const auto it = m_customWidgetDataHash.constFind(className);
     if (it != m_customWidgetDataHash.constEnd())
         return it.value().addPageMethod;
     return QString();
@@ -234,7 +230,7 @@ QString QFormBuilderExtra::customWidgetAddPageMethod(const QString &className) c
 
 bool QFormBuilderExtra::isCustomWidgetContainer(const QString &className) const
 {
-    const QHash<QString, CustomWidgetData>::const_iterator it = m_customWidgetDataHash.constFind(className);
+    const auto it = m_customWidgetDataHash.constFind(className);
     if (it != m_customWidgetDataHash.constEnd())
         return it.value().isContainer;
     return false;
@@ -314,7 +310,7 @@ inline QString perCellPropertyToString(const Layout *l, int count, int (Layout::
         QTextStream str(&rc);
         for (int i = 0; i < count; i++) {
             if (i)
-                str << QLatin1Char(',');
+                str << ',';
             str << (l->*getter)(i);
         }
     }
@@ -339,7 +335,7 @@ inline bool parsePerCellProperty(Layout *l, int count, void (Layout::*setter)(in
         clearPerCellValue(l, count, setter, defaultValue);
         return true;
     }
-    const auto list = QStringView{s}.split(QLatin1Char(','));
+    const auto list = QStringView{s}.split(u',');
     if (list.isEmpty()) {
         clearPerCellValue(l, count, setter, defaultValue);
         return true;
@@ -512,14 +508,13 @@ DomColorGroup *QFormBuilderExtra::saveColorGroup(const QPalette &palette,
     DomColorGroup *group = new DomColorGroup();
     QList<DomColorRole *> colorRoles;
 
-    const uint mask = palette.resolveMask();
-    for (int role = QPalette::WindowText; role < QPalette::NColorRoles; ++role) {
-        if (mask & (1 << role)) {
-            const QBrush &br = palette.brush(colorGroup, QPalette::ColorRole(role));
-
+    for (int r = QPalette::WindowText; r < QPalette::NColorRoles; ++r) {
+        const auto role = static_cast<QPalette::ColorRole>(r);
+        if (palette.isBrushSet(colorGroup, role)) {
+            const QBrush &br = palette.brush(colorGroup, role);
             DomColorRole *colorRole = new DomColorRole();
             colorRole->setElementBrush(saveBrush(br));
-            colorRole->setAttributeRole(QLatin1String(colorRole_enum.valueToKey(role)));
+            colorRole->setAttributeRole(QLatin1StringView(colorRole_enum.valueToKey(role)));
             colorRoles.append(colorRole);
         }
     }
@@ -625,7 +620,7 @@ DomBrush *QFormBuilderExtra::saveBrush(const QBrush &br)
 
     DomBrush *brush = new DomBrush();
     const Qt::BrushStyle style = br.style();
-    brush->setAttributeBrushStyle(QLatin1String(brushStyle_enum.valueToKey(style)));
+    brush->setAttributeBrushStyle(QLatin1StringView(brushStyle_enum.valueToKey(style)));
     if (style == Qt::LinearGradientPattern ||
                 style == Qt::RadialGradientPattern ||
                 style == Qt::ConicalGradientPattern) {
@@ -636,9 +631,9 @@ DomBrush *QFormBuilderExtra::saveBrush(const QBrush &br)
         DomGradient *gradient = new DomGradient();
         const QGradient *gr = br.gradient();
         const QGradient::Type type = gr->type();
-        gradient->setAttributeType(QLatin1String(gradientType_enum.valueToKey(type)));
-        gradient->setAttributeSpread(QLatin1String(gradientSpread_enum.valueToKey(gr->spread())));
-        gradient->setAttributeCoordinateMode(QLatin1String(gradientCoordinate_enum.valueToKey(gr->coordinateMode())));
+        gradient->setAttributeType(QLatin1StringView(gradientType_enum.valueToKey(type)));
+        gradient->setAttributeSpread(QLatin1StringView(gradientSpread_enum.valueToKey(gr->spread())));
+        gradient->setAttributeCoordinateMode(QLatin1StringView(gradientCoordinate_enum.valueToKey(gr->coordinateMode())));
         QList<DomGradientStop *> stops;
         const QGradientStops st = gr->stops();
         for (const QGradientStop &pair : st) {
@@ -696,47 +691,47 @@ DomBrush *QFormBuilderExtra::saveBrush(const QBrush &br)
 // ------------ QFormBuilderStrings
 
 QFormBuilderStrings::QFormBuilderStrings() :
-    buddyProperty(QStringLiteral("buddy")),
-    cursorProperty(QStringLiteral("cursor")),
-    objectNameProperty(QStringLiteral("objectName")),
-    trueValue(QStringLiteral("true")),
-    falseValue(QStringLiteral("false")),
-    horizontalPostFix(QStringLiteral("Horizontal")),
-    separator(QStringLiteral("separator")),
-    defaultTitle(QStringLiteral("Page")),
-    titleAttribute(QStringLiteral("title")),
-    labelAttribute(QStringLiteral("label")),
-    toolTipAttribute(QStringLiteral("toolTip")),
-    whatsThisAttribute(QStringLiteral("whatsThis")),
-    flagsAttribute(QStringLiteral("flags")),
-    iconAttribute(QStringLiteral("icon")),
-    pixmapAttribute(QStringLiteral("pixmap")),
-    textAttribute(QStringLiteral("text")),
-    currentIndexProperty(QStringLiteral("currentIndex")),
-    toolBarAreaAttribute(QStringLiteral("toolBarArea")),
-    toolBarBreakAttribute(QStringLiteral("toolBarBreak")),
-    dockWidgetAreaAttribute(QStringLiteral("dockWidgetArea")),
-    marginProperty(QStringLiteral("margin")),
-    spacingProperty(QStringLiteral("spacing")),
-    leftMarginProperty(QStringLiteral("leftMargin")),
-    topMarginProperty(QStringLiteral("topMargin")),
-    rightMarginProperty(QStringLiteral("rightMargin")),
-    bottomMarginProperty(QStringLiteral("bottomMargin")),
-    horizontalSpacingProperty(QStringLiteral("horizontalSpacing")),
-    verticalSpacingProperty(QStringLiteral("verticalSpacing")),
-    sizeHintProperty(QStringLiteral("sizeHint")),
-    sizeTypeProperty(QStringLiteral("sizeType")),
-    orientationProperty(QStringLiteral("orientation")),
-    styleSheetProperty(QStringLiteral("styleSheet")),
-    qtHorizontal(QStringLiteral("Qt::Horizontal")),
-    qtVertical(QStringLiteral("Qt::Vertical")),
-    currentRowProperty(QStringLiteral("currentRow")),
-    tabSpacingProperty(QStringLiteral("tabSpacing")),
-    qWidgetClass(QStringLiteral("QWidget")),
-    lineClass(QStringLiteral("Line")),
-    geometryProperty(QStringLiteral("geometry")),
-    scriptWidgetVariable(QStringLiteral("widget")),
-    scriptChildWidgetsVariable(QStringLiteral("childWidgets"))
+    buddyProperty(u"buddy"_s),
+    cursorProperty(u"cursor"_s),
+    objectNameProperty(u"objectName"_s),
+    trueValue(u"true"_s),
+    falseValue(u"false"_s),
+    horizontalPostFix(u"Horizontal"_s),
+    separator(u"separator"_s),
+    defaultTitle(u"Page"_s),
+    titleAttribute(u"title"_s),
+    labelAttribute(u"label"_s),
+    toolTipAttribute(u"toolTip"_s),
+    whatsThisAttribute(u"whatsThis"_s),
+    flagsAttribute(u"flags"_s),
+    iconAttribute(u"icon"_s),
+    pixmapAttribute(u"pixmap"_s),
+    textAttribute(u"text"_s),
+    currentIndexProperty(u"currentIndex"_s),
+    toolBarAreaAttribute(u"toolBarArea"_s),
+    toolBarBreakAttribute(u"toolBarBreak"_s),
+    dockWidgetAreaAttribute(u"dockWidgetArea"_s),
+    marginProperty(u"margin"_s),
+    spacingProperty(u"spacing"_s),
+    leftMarginProperty(u"leftMargin"_s),
+    topMarginProperty(u"topMargin"_s),
+    rightMarginProperty(u"rightMargin"_s),
+    bottomMarginProperty(u"bottomMargin"_s),
+    horizontalSpacingProperty(u"horizontalSpacing"_s),
+    verticalSpacingProperty(u"verticalSpacing"_s),
+    sizeHintProperty(u"sizeHint"_s),
+    sizeTypeProperty(u"sizeType"_s),
+    orientationProperty(u"orientation"_s),
+    styleSheetProperty(u"styleSheet"_s),
+    qtHorizontal(u"Qt::Horizontal"_s),
+    qtVertical(u"Qt::Vertical"_s),
+    currentRowProperty(u"currentRow"_s),
+    tabSpacingProperty(u"tabSpacing"_s),
+    qWidgetClass(u"QWidget"_s),
+    lineClass(u"Line"_s),
+    geometryProperty(u"geometry"_s),
+    scriptWidgetVariable(u"widget"_s),
+    scriptChildWidgetsVariable(u"childWidgets"_s)
 {
     itemRoles.append(qMakePair(Qt::FontRole, QString::fromLatin1("font")));
     itemRoles.append(qMakePair(Qt::TextAlignmentRole, QString::fromLatin1("textAlignment")));

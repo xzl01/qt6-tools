@@ -7,13 +7,14 @@
 
 QT_BEGIN_NAMESPACE
 
-using namespace qdesigner_internal;
+using namespace Qt::StringLiterals;
+
+namespace qdesigner_internal {
 
 StringListEditor::StringListEditor(QWidget *parent)
     : QDialog(parent), m_model(new QStringListModel(this))
 {
     setupUi(this);
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     listView->setModel(m_model);
 
     connect(listView->selectionModel(),
@@ -23,10 +24,16 @@ StringListEditor::StringListEditor(QWidget *parent)
             &QAbstractItemDelegate::closeEditor,
             this, &StringListEditor::currentValueChanged);
 
-    QIcon upIcon = createIconSet(QString::fromUtf8("up.png"));
-    QIcon downIcon = createIconSet(QString::fromUtf8("down.png"));
-    QIcon minusIcon = createIconSet(QString::fromUtf8("minus.png"));
-    QIcon plusIcon = createIconSet(QString::fromUtf8("plus.png"));
+    connect(upButton, &QAbstractButton::clicked, this, &StringListEditor::upButtonClicked);
+    connect(downButton, &QAbstractButton::clicked, this, &StringListEditor::downButtonClicked);
+    connect(newButton, &QAbstractButton::clicked, this, &StringListEditor::newButtonClicked);
+    connect(deleteButton, &QAbstractButton::clicked, this, &StringListEditor::deleteButtonClicked);
+    connect(valueEdit, &QLineEdit::textEdited, this, &StringListEditor::valueEdited);
+
+    QIcon upIcon = createIconSet(u"up.png"_s);
+    QIcon downIcon = createIconSet(u"down.png"_s);
+    QIcon minusIcon = createIconSet(u"minus.png"_s);
+    QIcon plusIcon = createIconSet(u"plus.png"_s);
     upButton->setIcon(upIcon);
     downButton->setIcon(downIcon);
     newButton->setIcon(plusIcon);
@@ -71,7 +78,7 @@ void StringListEditor::currentValueChanged()
     updateUi();
 }
 
-void StringListEditor::on_upButton_clicked()
+void StringListEditor::upButtonClicked()
 {
     int from = currentIndex();
     int to = currentIndex() - 1;
@@ -82,7 +89,7 @@ void StringListEditor::on_upButton_clicked()
     updateUi();
 }
 
-void StringListEditor::on_downButton_clicked()
+void StringListEditor::downButtonClicked()
 {
     int from = currentIndex();
     int to = currentIndex() + 1;
@@ -93,7 +100,7 @@ void StringListEditor::on_downButton_clicked()
     updateUi();
 }
 
-void StringListEditor::on_newButton_clicked()
+void StringListEditor::newButtonClicked()
 {
     int to = currentIndex();
     if (to == -1)
@@ -105,14 +112,14 @@ void StringListEditor::on_newButton_clicked()
     editString(to);
 }
 
-void StringListEditor::on_deleteButton_clicked()
+void StringListEditor::deleteButtonClicked()
 {
     removeString(currentIndex());
     setCurrentIndex(currentIndex());
     updateUi();
 }
 
-void StringListEditor::on_valueEdit_textEdited(const QString &text)
+void StringListEditor::valueEdited(const QString &text)
 {
     setStringAt(currentIndex(), text);
 }
@@ -168,5 +175,7 @@ void StringListEditor::editString(int index)
 {
     listView->edit(m_model->index(index, 0));
 }
+
+} // namespace qdesigner_internal
 
 QT_END_NAMESPACE

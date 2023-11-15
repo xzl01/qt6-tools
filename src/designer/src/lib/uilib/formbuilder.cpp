@@ -14,6 +14,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 #ifdef QFORMINTERNAL_NAMESPACE
 namespace QFormInternal {
 #endif
@@ -110,7 +112,7 @@ QWidget *QFormBuilder::create(DomWidget *ui_widget, QWidget *parentWidget)
             && !qobject_cast<QDockWidget *>(parentWidget)
 #endif
         ) {
-        const QString parentClassName = QLatin1String(parentWidget->metaObject()->className());
+        const QString parentClassName = QLatin1StringView(parentWidget->metaObject()->className());
         if (!d->isCustomWidgetContainer(parentClassName))
             d->setProcessingLayoutWidget(true);
     }
@@ -214,7 +216,7 @@ QLayout *QFormBuilder::createLayout(const QString &layoutName, QObject *parent, 
 #define DECLARE_COMPAT_WIDGET(W, C)
 
 #define DECLARE_LAYOUT(L, C) \
-    if (layoutName == QLatin1String(#L)) { \
+    if (layoutName == QLatin1StringView(#L)) { \
         Q_ASSERT(l == 0); \
         l = parentLayout \
             ? new L() \
@@ -440,11 +442,7 @@ void QFormBuilder::updateCustomWidgets()
             if (!QLibrary::isLibrary(plugin))
                 continue;
 
-            QString loaderPath = path;
-            loaderPath += QLatin1Char('/');
-            loaderPath += plugin;
-
-            QPluginLoader loader(loaderPath);
+            QPluginLoader loader(path + u'/' + plugin);
             if (loader.load())
                 insertPlugins(loader.instance(), &d->m_customWidgets);
         }

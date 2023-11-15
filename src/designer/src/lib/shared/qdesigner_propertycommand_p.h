@@ -18,8 +18,8 @@
 #include "qdesigner_formwindowcommand_p.h"
 
 #include <QtCore/qvariant.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qlist.h>
-#include <QtCore/qmap.h>
 #include <QtCore/qpair.h>
 #include <QtCore/qsharedpointer.h>
 
@@ -62,7 +62,8 @@ public:
     SpecialProperty specialProperty() const { return m_specialProperty; }
     // set a new value. Can be overwritten to perform a transformation (see
     // handling of Arrow key move in FormWindow class).
-    virtual Value setValue(QDesignerFormWindowInterface *fw, const QVariant &value, bool changed, unsigned subPropertyMask);
+    virtual Value setValue(QDesignerFormWindowInterface *fw, const QVariant &value,
+                           bool changed, quint64 subPropertyMask);
 
     // restore old value
     Value restoreOldValue(QDesignerFormWindowInterface *fw);
@@ -123,8 +124,8 @@ public:
     void undo() override;
 
 protected:
-    using PropertyHelperPtr = QSharedPointer<PropertyHelper>;
-    using PropertyHelperList = QList<PropertyHelperPtr>;
+    using PropertyHelperPtr = std::unique_ptr<PropertyHelper>;
+    using PropertyHelperList = std::vector<PropertyHelperPtr>;
 
     // add an object
     bool add(QObject *object, const QString &propertyName);
@@ -133,7 +134,7 @@ protected:
     bool initList(const QObjectList &list, const QString &apropertyName, QObject *referenceObject = nullptr);
 
     // set a new value, return update mask
-    unsigned setValue(const QVariant &value, bool changed, unsigned subPropertyMask);
+    unsigned setValue(const QVariant &value, bool changed, quint64 subPropertyMask);
 
     // restore old value,  return update mask
     unsigned  restoreOldValue();
@@ -169,8 +170,9 @@ protected:
     const PropertyDescription &propertyDescription() const { return  m_propertyDescription; }
 
 protected:
-    virtual PropertyHelper *createPropertyHelper(QObject *o, SpecialProperty sp,
-                                                 QDesignerPropertySheetExtension *sheet, int sheetIndex) const;
+    virtual std::unique_ptr<PropertyHelper>
+    createPropertyHelper(QObject *o, SpecialProperty sp,
+                         QDesignerPropertySheetExtension *sheet, int sheetIndex) const;
 
 private:
     PropertyDescription m_propertyDescription;
@@ -203,10 +205,10 @@ protected:
     virtual QVariant mergeValue(const QVariant &newValue);
 
 private:
-    unsigned subPropertyMask(const QVariant &newValue, QObject *referenceObject);
+    quint64 subPropertyMask(const QVariant &newValue, QObject *referenceObject);
     void setDescription();
     QVariant m_newValue;
-    unsigned m_subPropertyMask;
+    quint64 m_subPropertyMask;
 };
 
 class QDESIGNER_SHARED_EXPORT ResetPropertyCommand: public PropertyListCommand
@@ -235,14 +237,14 @@ class QDESIGNER_SHARED_EXPORT AddDynamicPropertyCommand: public QDesignerFormWin
 public:
     explicit AddDynamicPropertyCommand(QDesignerFormWindowInterface *formWindow);
 
-    bool init(const QList<QObject *> &selection, QObject *current, const QString &propertyName, const QVariant &value);
+    bool init(const QObjectList &selection, QObject *current, const QString &propertyName, const QVariant &value);
 
     void redo() override;
     void undo() override;
 private:
     void setDescription();
     QString m_propertyName;
-    QList<QObject *> m_selection;
+    QObjectList m_selection;
     QVariant m_value;
 };
 
@@ -252,14 +254,14 @@ class QDESIGNER_SHARED_EXPORT RemoveDynamicPropertyCommand: public QDesignerForm
 public:
     explicit RemoveDynamicPropertyCommand(QDesignerFormWindowInterface *formWindow);
 
-    bool init(const QList<QObject *> &selection, QObject *current, const QString &propertyName);
+    bool init(const QObjectList &selection, QObject *current, const QString &propertyName);
 
     void redo() override;
     void undo() override;
 private:
     void setDescription();
     QString m_propertyName;
-    QMap<QObject *, QPair<QVariant, bool> > m_objectToValueAndChanged;
+    QHash<QObject *, QPair<QVariant, bool> > m_objectToValueAndChanged;
 };
 
 } // namespace qdesigner_internal

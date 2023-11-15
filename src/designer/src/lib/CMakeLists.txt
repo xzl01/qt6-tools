@@ -1,4 +1,6 @@
-# Generated from lib.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
+
 
 #####################################################################
 ## Designer Module:
@@ -24,6 +26,7 @@ qt_internal_add_module(Designer
         ../../../shared/qtgradienteditor/qtgradientviewdialog.cpp ../../../shared/qtgradienteditor/qtgradientviewdialog.h
         ../../../shared/qtgradienteditor/qtgradientwidget.cpp ../../../shared/qtgradienteditor/qtgradientwidget.h
         extension/default_extensionfactory.cpp extension/default_extensionfactory.h
+        extension/extension_global.h
         extension/extension.cpp extension/extension.h
         extension/qextensionmanager.cpp extension/qextensionmanager.h
         sdk/abstractactioneditor.cpp sdk/abstractactioneditor.h
@@ -55,6 +58,7 @@ qt_internal_add_module(Designer
         sdk/layoutdecoration.h
         sdk/membersheet.h
         sdk/propertysheet.h
+        sdk/sdk_global.h
         sdk/taskmenu.cpp sdk/taskmenu.h
         shared/actioneditor.cpp shared/actioneditor_p.h
         shared/actionprovider_p.h
@@ -135,6 +139,7 @@ qt_internal_add_module(Designer
         shared/widgetdatabase.cpp shared/widgetdatabase_p.h
         shared/widgetfactory.cpp shared/widgetfactory_p.h
         shared/zoomwidget.cpp shared/zoomwidget_p.h
+        uilib/uilib_global.h
         uilib/abstractformbuilder.cpp uilib/abstractformbuilder.h
         uilib/formbuilder.cpp uilib/formbuilder.h
         uilib/formbuilderextra.cpp uilib/formbuilderextra_p.h
@@ -142,6 +147,13 @@ qt_internal_add_module(Designer
         uilib/resourcebuilder.cpp uilib/resourcebuilder_p.h
         uilib/textbuilder.cpp uilib/textbuilder_p.h
         uilib/ui4.cpp uilib/ui4_p.h
+        components/qdesigner_components.h
+        components/qdesigner_components_global.h
+    NO_UNITY_BUILD_SOURCES
+        shared/qdesigner_command.cpp # redefinition of 'QMetaTypeId<QList<QWidget *>>' (from morphmenu.cpp)
+                                     # and recursiveUpdate (from formwindowbase.cpp)
+        uilib/abstractformbuilder.cpp # using namespace QFormInternal/redefinition of 'QMetaTypeId<QList<QWidget *>>' (from morphmenu.cpp)
+        uilib/ui4.cpp # using namespace QFormInternal
     DEFINES
         QDESIGNER_EXTENSION_LIBRARY
         QDESIGNER_SDK_LIBRARY
@@ -373,8 +385,6 @@ qt_internal_add_resource(Designer "shared"
         ${shared_resource_files}
 )
 
-
-#### Keys ignored in scope 1:.:.:lib.pro:<TRUE>:
 # MODULE = "designer"
 
 ## Scopes:
@@ -399,6 +409,15 @@ qt_internal_extend_target(Designer CONDITION NOT QT_BUILD_SHARED_LIBS
         ../../../shared/qtpropertybrowser/qtvariantproperty.cpp ../../../shared/qtpropertybrowser/qtvariantproperty.h
     INCLUDE_DIRECTORIES
         ../../../shared/qtpropertybrowser
+)
+
+if(NOT TARGET WrapZSTD::WrapZSTD)
+    qt_find_package(WrapZSTD 1.3 PROVIDED_TARGETS WrapZSTD::WrapZSTD)
+endif()
+
+qt_internal_extend_target(Designer CONDITION QT_FEATURE_zstd
+    LIBRARIES
+        WrapZSTD::WrapZSTD
 )
 
 if(NOT QT_BUILD_SHARED_LIBS)

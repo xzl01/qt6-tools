@@ -52,6 +52,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 static inline QAction *createSeparatorHelper(QObject *parent) {
     QAction *rc = new QAction(parent);
     rc->setSeparator(true);
@@ -63,8 +65,7 @@ static QString objName(const QDesignerFormEditorInterface *core, QObject *object
             = qt_extension<QDesignerPropertySheetExtension*>(core->extensionManager(), object);
     Q_ASSERT(sheet != nullptr);
 
-    const QString objectNameProperty = QStringLiteral("objectName");
-    const int index = sheet->indexOf(objectNameProperty);
+    const int index = sheet->indexOf(u"objectName"_s);
     const QVariant v = sheet->property(index);
     if (v.canConvert<qdesigner_internal::PropertySheetStringValue>())
         return v.value<qdesigner_internal::PropertySheetStringValue>().value();
@@ -91,7 +92,6 @@ ObjectNameDialog::ObjectNameDialog(QWidget *parent, const QString &oldName)
                                                            qdesigner_internal::ValidationObjectName))
 {
     setWindowTitle(QCoreApplication::translate("ObjectNameDialog", "Change Object Name"));
-    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
     QVBoxLayout *vboxLayout = new QVBoxLayout(this);
     vboxLayout->addWidget(new QLabel(QCoreApplication::translate("ObjectNameDialog", "Object Name")));
@@ -121,19 +121,21 @@ namespace qdesigner_internal {
 
 // Sub menu displaying the alignment options of a widget in a managed
 // grid/box layout cell.
-class LayoutAlignmentMenu {
+class LayoutAlignmentMenu : public QObject {
+    Q_OBJECT
 public:
     explicit LayoutAlignmentMenu(QObject *parent);
 
     QAction *subMenuAction() const { return m_subMenuAction; }
-
-    void connect(QObject *receiver, const char *aSlot);
 
     // Set up enabled state and checked actions according to widget (managed box/grid)
     bool setAlignment(const QDesignerFormEditorInterface *core, QWidget *w);
 
     // Return the currently checked alignment
     Qt::Alignment alignment() const;
+
+signals:
+    void changed();
 
 private:
     enum Actions { HorizNone, Left, HorizCenter, Right, VerticalNone, Top, VerticalCenter, Bottom };
@@ -155,13 +157,15 @@ QAction *LayoutAlignmentMenu::createAction(const QString &text, int data, QMenu 
     return a;
 }
 
-LayoutAlignmentMenu::LayoutAlignmentMenu(QObject *parent) :
+LayoutAlignmentMenu::LayoutAlignmentMenu(QObject *parent) : QObject(parent),
     m_subMenuAction(new QAction(QDesignerTaskMenu::tr("Layout Alignment"), parent)),
     m_horizGroup(new QActionGroup(parent)),
     m_verticalGroup(new QActionGroup(parent))
 {
     m_horizGroup->setExclusive(true);
     m_verticalGroup->setExclusive(true);
+    connect(m_horizGroup, &QActionGroup::triggered, this, &LayoutAlignmentMenu::changed);
+    connect(m_verticalGroup, &QActionGroup::triggered, this, &LayoutAlignmentMenu::changed);
 
     QMenu *menu = new QMenu;
     m_subMenuAction->setMenu(menu);
@@ -177,18 +181,12 @@ LayoutAlignmentMenu::LayoutAlignmentMenu(QObject *parent) :
     m_actions[Bottom] = createAction(QDesignerTaskMenu::tr("Bottom"), Qt::AlignBottom, menu, m_verticalGroup);
 }
 
-void LayoutAlignmentMenu::connect(QObject *receiver, const char *aSlot)
-{
-    QObject::connect(m_horizGroup, SIGNAL(triggered(QAction*)), receiver, aSlot);
-    QObject::connect(m_verticalGroup, SIGNAL(triggered(QAction*)), receiver, aSlot);
-}
-
 bool LayoutAlignmentMenu::setAlignment(const QDesignerFormEditorInterface *core, QWidget *w)
 {
     bool enabled;
     const Qt::Alignment alignment = LayoutAlignmentCommand::alignmentOf(core, w, &enabled);
+    m_subMenuAction->setEnabled(enabled);
     if (!enabled) {
-        m_subMenuAction->setEnabled(false);
         m_actions[HorizNone]->setChecked(true);
         m_actions[VerticalNone]->setChecked(true);
         return false;
@@ -356,7 +354,8 @@ QDesignerTaskMenu::QDesignerTaskMenu(QWidget *widget, QObject *parent) :
     connect(d->m_containerFakeMethods, &QAction::triggered, this, &QDesignerTaskMenu::containerFakeMethods);
     connect(d->m_navigateToSlot, &QAction::triggered, this, &QDesignerTaskMenu::slotNavigateToSlot);
     connect(d->m_sizeActionGroup, &QActionGroup::triggered, this, &QDesignerTaskMenu::applySize);
-    d->m_layoutAlignmentMenu.connect(this, SLOT(slotLayoutAlignment()));
+    connect(&d->m_layoutAlignmentMenu, &LayoutAlignmentMenu::changed,
+            this, &QDesignerTaskMenu::slotLayoutAlignment);
 }
 
 QDesignerTaskMenu::~QDesignerTaskMenu()
@@ -506,10 +505,10 @@ void QDesignerTaskMenu::changeObjectName()
     if (dialog.exec() == QDialog::Accepted) {
         const QString newObjectName = dialog.newObjectName();
         if (!newObjectName.isEmpty() && newObjectName  != oldObjectName ) {
-            const QString objectNameProperty = QStringLiteral("objectName");
             PropertySheetStringValue objectNameValue;
             objectNameValue.setValue(newObjectName);
-            setProperty(fw, CurrentWidgetMode, objectNameProperty, QVariant::fromValue(objectNameValue));
+            setProperty(fw, CurrentWidgetMode, u"objectName"_s,
+                        QVariant::fromValue(objectNameValue));
         }
     }
 }
@@ -565,12 +564,12 @@ void QDesignerTaskMenu::changeTextProperty(const QString &propertyName, const QS
 
 void QDesignerTaskMenu::changeToolTip()
 {
-    changeTextProperty(QStringLiteral("toolTip"), tr("Edit ToolTip"), MultiSelectionMode, Qt::AutoText);
+    changeTextProperty(u"toolTip"_s, tr("Edit ToolTip"), MultiSelectionMode, Qt::AutoText);
 }
 
 void QDesignerTaskMenu::changeWhatsThis()
 {
-    changeTextProperty(QStringLiteral("whatsThis"), tr("Edit WhatsThis"), MultiSelectionMode, Qt::AutoText);
+    changeTextProperty(u"whatsThis"_s, tr("Edit WhatsThis"), MultiSelectionMode, Qt::AutoText);
 }
 
 void QDesignerTaskMenu::changeStyleSheet()
@@ -630,7 +629,7 @@ static void createSizeCommand(QDesignerFormWindowInterface *fw, QWidget *w, int 
         if (flags & ApplyMinimumHeight)
              minimumSize.setHeight(size.height());
         SetPropertyCommand* cmd = new SetPropertyCommand(fw);
-        cmd->init(w, QStringLiteral("minimumSize"), minimumSize);
+        cmd->init(w, u"minimumSize"_s, minimumSize);
         fw->commandHistory()->push(cmd);
     }
     if (flags & (ApplyMaximumWidth|ApplyMaximumHeight)) {
@@ -640,7 +639,7 @@ static void createSizeCommand(QDesignerFormWindowInterface *fw, QWidget *w, int 
         if (flags & ApplyMaximumHeight)
              maximumSize.setHeight(size.height());
         SetPropertyCommand* cmd = new SetPropertyCommand(fw);
-        cmd->init(w, QStringLiteral("maximumSize"), maximumSize);
+        cmd->init(w, u"maximumSize"_s, maximumSize);
         fw->commandHistory()->push(cmd);
     }
 }
@@ -656,10 +655,10 @@ void QDesignerTaskMenu::applySize(QAction *a)
         return;
 
     const int mask = a->data().toInt();
-    const int size = selection.size();
-    fw->commandHistory()->beginMacro(tr("Set size constraint on %n widget(s)", nullptr, size));
-    for (int i = 0; i < size; i++)
-        createSizeCommand(fw, selection.at(i), mask);
+    fw->commandHistory()->beginMacro(tr("Set size constraint on %n widget(s)", nullptr,
+                                        int(selection.size())));
+    for (auto *w : selection)
+        createSizeCommand(fw, w, mask);
     fw->commandHistory()->endMacro();
 }
 
@@ -678,10 +677,10 @@ template <class Container>
     Selection s;
     designerObjectInspector->getSelection(s);
     const QWidgetList &source = fw->isManaged(current) ? s.managed : s.unmanaged;
-    const QWidgetList::const_iterator cend = source.constEnd();
-    for ( QWidgetList::const_iterator it = source.constBegin(); it != cend; ++it)
-        if (*it != current) // was first
-            c->push_back(*it);
+    for (auto *w : source) {
+        if (w != current) // was first
+            c->append(w);
+    }
 }
 
 QObjectList QDesignerTaskMenu::applicableObjects(const QDesignerFormWindowInterface *fw, PropertyMode pm) const
@@ -723,3 +722,5 @@ void QDesignerTaskMenu::slotLayoutAlignment()
 } // namespace qdesigner_internal
 
 QT_END_NAMESPACE
+
+#include "qdesigner_taskmenu.moc"

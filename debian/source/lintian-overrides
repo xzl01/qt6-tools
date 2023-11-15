@@ -1,0 +1,5 @@
+# The files in testsuite are not missing, they exist in the source
+qt6-tools source: source-is-missing [tests/auto/qdoc/generatedoutput/expected_output/adventures-with-non-ascii-characters.html]
+qt6-tools source: source-is-missing [tests/auto/qdoc/generatedoutput/expected_output/brief-adventures.html]
+qt6-tools source: source-is-missing [tests/auto/qdoc/generatedoutput/expected_output/qml-qdoc-test-type.html]
+qt6-tools source: source-is-missing [tests/auto/qdoc/generatedoutput/expected_output/qml-test-nover-typenoversion.html]

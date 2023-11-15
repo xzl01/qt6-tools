@@ -21,7 +21,10 @@
 
 QT_BEGIN_NAMESPACE
 
-static QToolButton *createToolButton(QWidget *parent, Qt::ArrowType at, const QString &name) {
+using namespace Qt::StringLiterals;
+
+static QToolButton *createToolButton(QWidget *parent, Qt::ArrowType at, const QString &name)
+{
     QToolButton *rc =  new QToolButton();
     rc->setAttribute(Qt::WA_NoChildEventsForParent, true);
     rc->setParent(parent);
@@ -38,8 +41,8 @@ QStackedWidgetPreviewEventFilter::QStackedWidgetPreviewEventFilter(QStackedWidge
     QObject(parent),
     m_buttonToolTipEnabled(false), // Not on preview
     m_stackedWidget(parent),
-    m_prev(createToolButton(m_stackedWidget, Qt::LeftArrow,  QStringLiteral("__qt__passive_prev"))),
-    m_next(createToolButton(m_stackedWidget, Qt::RightArrow, QStringLiteral("__qt__passive_next")))
+    m_prev(createToolButton(m_stackedWidget, Qt::LeftArrow,  u"__qt__passive_prev"_s)),
+    m_next(createToolButton(m_stackedWidget, Qt::RightArrow, u"__qt__passive_next"_s))
 {
     connect(m_prev, &QAbstractButton::clicked, this, &QStackedWidgetPreviewEventFilter::prevPage);
     connect(m_next, &QAbstractButton::clicked, this, &QStackedWidgetPreviewEventFilter::nextPage);
@@ -133,7 +136,7 @@ static inline QString stackedClassName(QStackedWidget *w)
 {
     if (const QDesignerFormWindowInterface *fw = QDesignerFormWindowInterface::findFormWindow(w))
         return qdesigner_internal::WidgetFactory::classNameOf(fw->core(), w);
-    return QStringLiteral("Stacked widget");
+    return u"Stacked widget"_s;
 }
 
 void QStackedWidgetPreviewEventFilter::updateButtonToolTip(QObject *o)
@@ -265,7 +268,7 @@ void QStackedWidgetEventFilter::gotoPage(int page) {
     // Are we on a form or in a preview?
     if (QDesignerFormWindowInterface *fw = QDesignerFormWindowInterface::findFormWindow(stackedWidget())) {
         qdesigner_internal::SetPropertyCommand *cmd = new  qdesigner_internal::SetPropertyCommand(fw);
-        cmd->init(stackedWidget(), QStringLiteral("currentIndex"), page);
+        cmd->init(stackedWidget(), u"currentIndex"_s, page);
         fw->commandHistory()->push(cmd);
         fw->emitSelectionChanged(); // Magically prevent an endless loop triggered by auto-repeat.
         updateButtons();
@@ -310,25 +313,25 @@ QMenu *QStackedWidgetEventFilter::addContextMenuActions(QMenu *popup)
 
 // --------  QStackedWidgetPropertySheet
 
-static const char *pagePropertyName = "currentPageName";
+static const char pagePropertyName[] = "currentPageName";
 
 QStackedWidgetPropertySheet::QStackedWidgetPropertySheet(QStackedWidget *object, QObject *parent) :
     QDesignerPropertySheet(object, parent),
     m_stackedWidget(object)
 {
-    createFakeProperty(QLatin1String(pagePropertyName), QString());
+    createFakeProperty(QLatin1StringView(pagePropertyName), QString());
 }
 
 bool QStackedWidgetPropertySheet::isEnabled(int index) const
 {
-    if (propertyName(index) != QLatin1String(pagePropertyName))
+    if (propertyName(index) != QLatin1StringView(pagePropertyName))
         return QDesignerPropertySheet::isEnabled(index);
     return  m_stackedWidget->currentWidget() != nullptr;
 }
 
 void QStackedWidgetPropertySheet::setProperty(int index, const QVariant &value)
 {
-    if (propertyName(index) == QLatin1String(pagePropertyName)) {
+    if (propertyName(index) == QLatin1StringView(pagePropertyName)) {
         if (QWidget *w = m_stackedWidget->currentWidget())
             w->setObjectName(value.toString());
     } else {
@@ -338,7 +341,7 @@ void QStackedWidgetPropertySheet::setProperty(int index, const QVariant &value)
 
 QVariant QStackedWidgetPropertySheet::property(int index) const
 {
-    if (propertyName(index) == QLatin1String(pagePropertyName)) {
+    if (propertyName(index) == QLatin1StringView(pagePropertyName)) {
         if (const QWidget *w = m_stackedWidget->currentWidget())
             return w->objectName();
         return QString();
@@ -348,7 +351,7 @@ QVariant QStackedWidgetPropertySheet::property(int index) const
 
 bool QStackedWidgetPropertySheet::reset(int index)
 {
-    if (propertyName(index) == QLatin1String(pagePropertyName)) {
+    if (propertyName(index) == QLatin1StringView(pagePropertyName)) {
         setProperty(index, QString());
         return true;
     }
@@ -357,7 +360,7 @@ bool QStackedWidgetPropertySheet::reset(int index)
 
 bool QStackedWidgetPropertySheet::checkProperty(const QString &propertyName)
 {
-    return propertyName != QLatin1String(pagePropertyName);
+    return propertyName != QLatin1StringView(pagePropertyName);
 }
 
 QT_END_NAMESPACE

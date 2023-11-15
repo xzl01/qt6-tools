@@ -47,6 +47,8 @@ static void initResources()
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 class QDesignerFormEditorInterfacePrivate {
 public:
     QDesignerFormEditorInterfacePrivate();
@@ -103,7 +105,7 @@ QDesignerFormEditorInterfacePrivate::~QDesignerFormEditorInterfacePrivate()
     these components. They are typically used to query (and
     manipulate) the respective component. For example:
 
-    \snippet lib/tools_designer_src_lib_sdk_abstractformeditor.cpp 0
+    \snippet lib/tools_designer_src_lib_sdk_abstractobjectinspector.cpp 0
 
     QDesignerFormEditorInterface is not intended to be instantiated
     directly. A pointer to \QD's current QDesignerFormEditorInterface
@@ -511,9 +513,9 @@ void QDesignerFormEditorInterface::setIntrospection(QDesignerIntrospectionInterf
 QString QDesignerFormEditorInterface::resourceLocation() const
 {
 #ifdef Q_OS_MACOS
-    return QStringLiteral(":/qt-project.org/formeditor/images/mac");
+    return u":/qt-project.org/formeditor/images/mac"_s;
 #else
-    return QStringLiteral(":/qt-project.org/formeditor/images/win");
+    return u":/qt-project.org/formeditor/images/win"_s;
 #endif
 }
 

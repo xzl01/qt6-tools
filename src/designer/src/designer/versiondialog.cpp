@@ -17,6 +17,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 class VersionLabel : public QLabel
 {
     Q_OBJECT
@@ -42,7 +44,7 @@ private:
 VersionLabel::VersionLabel(QWidget *parent)
         : QLabel(parent)
 {
-    QPixmap pixmap(QStringLiteral(":/qt-project.org/designer/images/designer.png"));
+    QPixmap pixmap(u":/qt-project.org/designer/images/designer.png"_s);
     pixmap.setDevicePixelRatio(devicePixelRatioF());
     setPixmap(pixmap);
     hitPoints.append(QPoint(56, 25));
@@ -130,17 +132,17 @@ VersionDialog::VersionDialog(QWidget *parent)
 #endif
             )
 {
-    setWindowFlags((windowFlags() & ~Qt::WindowContextHelpButtonHint) | Qt::MSWindowsFixedSizeDialogHint);
+    setWindowFlag(Qt::MSWindowsFixedSizeDialogHint, true);
     QGridLayout *layout = new QGridLayout(this);
     VersionLabel *label = new VersionLabel(this);
     QLabel *lbl = new QLabel(this);
     QString version = tr("<h3>%1</h3><br/><br/>Version %2");
-    version = version.arg(tr("Qt Designer")).arg(QLatin1String(QT_VERSION_STR));
+    version = version.arg(tr("Qt Designer")).arg(QLatin1StringView(QT_VERSION_STR));
     version.append(tr("<br/>Qt Designer is a graphical user interface designer for Qt applications.<br/>"));
 
     lbl->setText(tr("%1"
                     "<br/>Copyright (C) %2 The Qt Company Ltd."
-                    ).arg(version, QStringLiteral("2022")));
+                    ).arg(version, "2023"_L1));
 
     lbl->setWordWrap(true);
     lbl->setOpenExternalLinks(true);

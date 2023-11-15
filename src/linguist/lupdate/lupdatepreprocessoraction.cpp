@@ -144,7 +144,7 @@ void LupdatePPCallbacks::SourceRangeSkipped(clang::SourceRange sourceRange,
     const char *end = sm.getCharacterData(sourceRange.getEnd());
     llvm::StringRef skippedText = llvm::StringRef(begin, end - begin);
     if (ClangCppParser::stringContainsTranslationInformation(skippedText)) {
-        qCDebug(lcClang) << "SourceRangeSkipped: skipped text:" << skippedText.str();
+        qCDebug(lcClang) << "SourceRangeSkipped: skipped text:" << QString::fromStdString(skippedText.str());
         unsigned int beginLine = sm.getExpansionLineNumber(sourceRange.getBegin());
         unsigned int endLine = sm.getExpansionLineNumber(sourceRange.getEnd());
         qWarning("%s Code with translation information has been skipped "
@@ -157,7 +157,9 @@ void LupdatePPCallbacks::SourceRangeSkipped(clang::SourceRange sourceRange,
 void LupdatePPCallbacks::InclusionDirective(clang::SourceLocation /*hashLoc*/,
     const clang::Token & /*includeTok*/, clang::StringRef /*fileName*/, bool /*isAngled*/,
     clang::CharSourceRange /*filenameRange*/,
-#if (LUPDATE_CLANG_VERSION >= LUPDATE_CLANG_VERSION_CHECK(15,0,0))
+#if (LUPDATE_CLANG_VERSION >= LUPDATE_CLANG_VERSION_CHECK(16,0,0))
+    const clang::OptionalFileEntryRef file,
+#elif (LUPDATE_CLANG_VERSION >= LUPDATE_CLANG_VERSION_CHECK(15,0,0))
     const clang::Optional<clang::FileEntryRef> file,
 #else
     const clang::FileEntry *file,

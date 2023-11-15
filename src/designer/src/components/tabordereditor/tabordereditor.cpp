@@ -25,6 +25,8 @@ Q_DECLARE_METATYPE(QWidgetList)
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace {
     enum { VBOX_MARGIN = 1, HBOX_MARGIN = 4, BG_ALPHA = 32 };
 }
@@ -130,7 +132,7 @@ void TabOrderEditor::paintEvent(QPaintEvent *e)
     if (!m_beginning && cur < 0)
         cur = m_tab_order_list.size() - 1;
 
-    for (int i = 0; i < m_tab_order_list.size(); ++i) {
+    for (qsizetype i = 0; i < m_tab_order_list.size(); ++i) {
         QWidget *widget = m_tab_order_list.at(i);
         if (!isWidgetVisible(widget))
             continue;
@@ -165,7 +167,7 @@ bool TabOrderEditor::skipWidget(QWidget *w) const
 
     QExtensionManager *ext = formWindow()->core()->extensionManager();
     if (const QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(ext, w)) {
-        const int index = sheet->indexOf(QStringLiteral("focusPolicy"));
+        const int index = sheet->indexOf(u"focusPolicy"_s);
         if (index != -1) {
             bool ok = false;
             Qt::FocusPolicy q = (Qt::FocusPolicy) Utils::valueOf(sheet->property(index), &ok);
@@ -187,7 +189,7 @@ void TabOrderEditor::initTabOrder()
     }
 
     // Remove any widgets that have been removed form the form
-    for (int i = 0; i < m_tab_order_list.size(); ) {
+    for (qsizetype i = 0; i < m_tab_order_list.size(); ) {
         QWidget *w = m_tab_order_list.at(i);
         if (!formWindow()->mainContainer()->isAncestorOf(w) || skipWidget(w))
             m_tab_order_list.removeAt(i);
@@ -222,7 +224,7 @@ void TabOrderEditor::initTabOrder()
     }
 
     m_indicator_region = QRegion();
-    for (int i = 0; i < m_tab_order_list.size(); ++i) {
+    for (qsizetype i = 0; i < m_tab_order_list.size(); ++i) {
         if (m_tab_order_list.at(i)->isVisible())
             m_indicator_region |= indicatorRect(i);
     }
@@ -247,7 +249,7 @@ void TabOrderEditor::mouseMoveEvent(QMouseEvent *e)
 int TabOrderEditor::widgetIndexAt(const QPoint &pos) const
 {
     int target_index = -1;
-    for (int i = 0; i < m_tab_order_list.size(); ++i) {
+    for (qsizetype i = 0; i < m_tab_order_list.size(); ++i) {
         if (!m_tab_order_list.at(i)->isVisible())
             continue;
         if (indicatorRect(i).contains(pos)) {

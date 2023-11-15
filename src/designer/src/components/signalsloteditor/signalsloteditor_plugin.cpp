@@ -11,7 +11,9 @@
 
 QT_BEGIN_NAMESPACE
 
-using namespace qdesigner_internal;
+using namespace Qt::StringLiterals;
+
+namespace qdesigner_internal {
 
 SignalSlotEditorPlugin::SignalSlotEditorPlugin() = default;
 
@@ -27,10 +29,10 @@ void SignalSlotEditorPlugin::initialize(QDesignerFormEditorInterface *core)
     Q_ASSERT(!isInitialized());
 
     m_action = new QAction(tr("Edit Signals/Slots"), this);
-    m_action->setObjectName(QStringLiteral("__qt_edit_signals_slots_action"));
+    m_action->setObjectName(u"__qt_edit_signals_slots_action"_s);
     m_action->setShortcut(tr("F4"));
-    QIcon icon = QIcon::fromTheme(QStringLiteral("designer-edit-signals"),
-                                  QIcon(core->resourceLocation() + QStringLiteral("/signalslottool.png")));
+    QIcon icon = QIcon::fromTheme(u"designer-edit-signals"_s,
+                                  QIcon(core->resourceLocation() + "/signalslottool.png"_L1));
     m_action->setIcon(icon);
     m_action->setEnabled(false);
 
@@ -86,6 +88,8 @@ void SignalSlotEditorPlugin::activeFormWindowChanged(QDesignerFormWindowInterfac
 {
     m_action->setEnabled(formWindow != nullptr);
 }
+
+} // namespace qdesigner_internal
 
 QT_END_NAMESPACE
 

@@ -1,4 +1,6 @@
-# Generated from designer.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
+
 
 #####################################################################
 ## designer App:
@@ -32,7 +34,7 @@ qt_internal_add_app(designer
         ../lib/sdk
         ../lib/shared
         extra
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::CorePrivate
         Qt::DesignerComponentsPrivate
         Qt::DesignerPrivate
@@ -45,6 +47,9 @@ qt_internal_add_app(designer
     PRECOMPILED_HEADER
         "qdesigner_pch.h"
 )
+
+# Due to QTBUG-110369, don't add designer as dependency to External Project examples.
+qt_internal_skip_dependency_for_examples(designer)
 
 # Resources:
 set(designer_resource_files
@@ -133,7 +138,6 @@ if(APPLE)
     # special case end
 endif()
 
-#### Keys ignored in scope 6:.:.:designer.pro:APPLE:
 # FILETYPES.files = "uifile.icns"
 # FILETYPES.path = "Contents/Resources"
 # QMAKE_BUNDLE_DATA = "FILETYPES"

@@ -1,1 +1,4 @@
+# Fixed in 6.6.1
+find_zstd_shared.diff
+
 fix-build-with-system-litehtml.patch

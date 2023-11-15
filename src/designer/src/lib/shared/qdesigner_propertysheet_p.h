@@ -94,6 +94,8 @@ public:
     static bool internalDynamicPropertiesEnabled();
     static void setInternalDynamicPropertiesEnabled(bool v);
 
+    static QDesignerFormEditorInterface *formEditorForObject(QObject *o);
+
 protected:
     bool isAdditionalProperty(int index) const;
     bool isFakeProperty(int index) const;
@@ -229,7 +231,7 @@ void QDesignerPropertySheetFactory<Object, PropertySheet>::registerExtension(QEx
 
 
 // Standard property sheet
-typedef QDesignerPropertySheetFactory<QObject, QDesignerPropertySheet> QDesignerDefaultPropertySheetFactory;
+using QDesignerDefaultPropertySheetFactory = QDesignerPropertySheetFactory<QObject, QDesignerPropertySheet>;
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(QDesignerPropertySheet::ObjectFlags)
 

@@ -24,14 +24,16 @@
 #include <QtCore/qshareddata.h>
 
 
-static const char *skinResourcePathC = ":/skins/";
+static const char skinResourcePathC[] = ":/skins/";
 
 QT_BEGIN_NAMESPACE
 
-static const char *skinExtensionC = "skin";
+using namespace Qt::StringLiterals;
+
+static const char skinExtensionC[] = "skin";
 
 // Pair of skin name, path
-typedef QPair<QString, QString> SkinNamePath;
+using SkinNamePath = QPair<QString, QString>;
 using Skins = QList<SkinNamePath>;
 enum { SkinComboNoneIndex = 0 };
 
@@ -39,16 +41,14 @@ enum { SkinComboNoneIndex = 0 };
 static const Skins &defaultSkins() {
     static Skins rc;
     if (rc.isEmpty()) {
-        const QString skinPath = QLatin1String(skinResourcePathC);
-        QString pattern = QStringLiteral("*.");
-        pattern += QLatin1String(skinExtensionC);
+        const QString skinPath = QLatin1StringView(skinResourcePathC);
+        const QString pattern = "*."_L1 + QLatin1StringView(skinExtensionC);
         const QDir dir(skinPath, pattern);
         const QFileInfoList list = dir.entryInfoList(QDir::Dirs|QDir::NoDotAndDotDot, QDir::Name);
         if (list.isEmpty())
             return rc;
-        const QFileInfoList::const_iterator lcend = list.constEnd();
-        for (QFileInfoList::const_iterator it = list.constBegin(); it != lcend; ++it)
-            rc.push_back(SkinNamePath(it->baseName(), it->filePath()));
+        for (const auto &fi : list)
+            rc.append(SkinNamePath(fi.baseName(), fi.filePath()));
     }
     return rc;
 }
@@ -84,7 +84,7 @@ private:
 
     const QString m_defaultStyle;
     QGroupBox *m_parent;
-    Ui::PreviewConfigurationWidget m_ui;
+    QT_PREPEND_NAMESPACE(Ui)::PreviewConfigurationWidget m_ui;
 
     int m_firstUserSkinIndex;
     int m_browseSkinIndex;
@@ -109,11 +109,11 @@ PreviewConfigurationWidget::PreviewConfigurationWidgetPrivate::PreviewConfigurat
 
     // sheet
     m_ui.m_appStyleSheetLineEdit->setTextPropertyValidationMode(qdesigner_internal::ValidationStyleSheet);
-    m_ui.m_appStyleSheetClearButton->setIcon(qdesigner_internal::createIconSet(QString::fromUtf8("resetproperty.png")));
+    m_ui.m_appStyleSheetClearButton->setIcon(qdesigner_internal::createIconSet(u"resetproperty.png"_s));
     QObject::connect(m_ui.m_appStyleSheetClearButton, &QAbstractButton::clicked,
                      m_ui.m_appStyleSheetLineEdit, &qdesigner_internal::TextPropertyEditor::clear);
 
-    m_ui.m_skinRemoveButton->setIcon(qdesigner_internal::createIconSet(QString::fromUtf8("editdelete.png")));
+    m_ui.m_skinRemoveButton->setIcon(qdesigner_internal::createIconSet(u"editdelete.png"_s));
     // skins: find default skins (resources)
     m_ui.m_skinRemoveButton->setEnabled(false);
     Skins skins = defaultSkins();
@@ -147,14 +147,12 @@ void PreviewConfigurationWidget::PreviewConfigurationWidgetPrivate::addUserSkins
 {
     if (files.isEmpty())
         return;
-    const QStringList ::const_iterator fcend = files.constEnd();
-    for (QStringList::const_iterator it = files.constBegin(); it != fcend; ++it) {
-        const QFileInfo fi(*it);
-        if (fi.isDir() && fi.isReadable()) {
-            m_ui.m_skinCombo->insertItem(m_browseSkinIndex++, fi.baseName(), QVariant(*it));
-        } else {
-            qWarning() << "Unable to access the skin directory '" << *it << "'.";
-        }
+    for (const auto &f : files) {
+        const QFileInfo fi(f);
+        if (fi.isDir() && fi.isReadable())
+            m_ui.m_skinCombo->insertItem(m_browseSkinIndex++, fi.baseName(), QVariant(f));
+        else
+            qWarning() << "Unable to access the skin directory '" << f << "'.";
     }
 }
 
@@ -243,7 +241,7 @@ int  PreviewConfigurationWidget::PreviewConfigurationWidgetPrivate::browseSkin()
     dlg.setOption(QFileDialog::ShowDirsOnly);
     const QString title = tr("Load Custom Device Skin");
     dlg.setWindowTitle(title);
-    dlg.setNameFilter(tr("All QVFB Skins (*.%1)").arg(QLatin1String(skinExtensionC)));
+    dlg.setNameFilter(tr("All QVFB Skins (*.%1)").arg(QLatin1StringView(skinExtensionC)));
 
     int rc = m_lastSkinIndex;
     do {

@@ -50,6 +50,8 @@ using Specialized = Struct<int, T>;
     void obsoleteMember();
     void anotherObsoleteMember();
     void deprecatedMember();
+    void methodWithEnDashInItsDocs();
+    void methodWithEmDashInItsDocs();
     void func(bool) {};
     //! [funcPtr]
     void (*funcPtr(bool b, const char *s))(bool) {
@@ -95,6 +97,7 @@ public:
     using NotTypedef = int;
     void virtualFun() override;
     static void staticObsoleteMember();
+    NotTypedef someValue();
 #ifdef test_properties
     QBindable<QString> bindableProp();
     QBindable<QString> someBindableProp();

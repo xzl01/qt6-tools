@@ -15,7 +15,7 @@
     menu. Whenever a task menu is requested, \QD will query
     for the selected widget's task menu extension.
 
-    \image taskmenuextension-example-faded.png
+    \image taskmenuextension-example.webp
 
     A task menu extension is a collection of QActions. The actions
     appear as entries in the task menu when the plugin with the
@@ -81,7 +81,7 @@
     For a complete example using the QDesignerTaskMenuExtension class,
     see the \l {taskmenuextension}{Task Menu Extension
     example}. The example shows how to create a custom widget plugin
-    for \QD, and how to to use the QDesignerTaskMenuExtension
+    for \QD, and how to use the QDesignerTaskMenuExtension
     class to add custom items to \QD's task menu.
 
     \sa QExtensionFactory, QExtensionManager, {Creating Custom Widget

@@ -30,6 +30,8 @@ QT_TRANSLATE_NOOP("BrushPropertyManager", "Crossing diagonal"),
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 BrushPropertyManager::BrushPropertyManager() = default;
@@ -99,7 +101,7 @@ static void clearBrushIcons()
     brushIcons()->clear();
 }
 
-const BrushPropertyManager::EnumIndexIconMap &BrushPropertyManager::brushStyleIcons()
+const QMap<int, QIcon> &BrushPropertyManager::brushStyleIcons()
 {
     // Create a map of icons for the brush style editor
     if (brushIcons()->empty()) {
@@ -120,6 +122,8 @@ QString BrushPropertyManager::brushStyleIndexToString(int brushStyleIndex)
     return brushStyleIndex < brushStyleCount ? QCoreApplication::translate("BrushPropertyManager", brushStyles[brushStyleIndex]) :  QString();
 }
 
+BrushPropertyManager::~BrushPropertyManager() = default;
+
 void BrushPropertyManager::initializeProperty(QtVariantPropertyManager *vm, QtProperty *property, int enumTypeId)
 {
     m_brushValues.insert(property, QBrush());
@@ -129,8 +133,8 @@ void BrushPropertyManager::initializeProperty(QtVariantPropertyManager *vm, QtPr
     QStringList styles;
     for (const char *brushStyle : brushStyles)
         styles.push_back(QCoreApplication::translate("BrushPropertyManager", brushStyle));
-    styleSubProperty->setAttribute(QStringLiteral("enumNames"), styles);
-    styleSubProperty->setAttribute(QStringLiteral("enumIcons"), QVariant::fromValue(brushStyleIcons()));
+    styleSubProperty->setAttribute(u"enumNames"_s, styles);
+    styleSubProperty->setAttribute(u"enumIcons"_s, QVariant::fromValue(brushStyleIcons()));
     m_brushPropertyToStyleSubProperty.insert(property, styleSubProperty);
     m_brushStyleSubPropertyToProperty.insert(styleSubProperty, property);
     // color
@@ -143,24 +147,24 @@ void BrushPropertyManager::initializeProperty(QtVariantPropertyManager *vm, QtPr
 
 bool BrushPropertyManager::uninitializeProperty(QtProperty *property)
 {
-    const PropertyBrushMap::iterator brit = m_brushValues.find(property); // Brushes
+    const auto brit = m_brushValues.find(property); // Brushes
     if (brit == m_brushValues.end())
         return false;
     m_brushValues.erase(brit);
     // style
-    PropertyToPropertyMap::iterator subit = m_brushPropertyToStyleSubProperty.find(property);
-    if (subit != m_brushPropertyToStyleSubProperty.end()) {
-        QtProperty *styleProp = subit.value();
+    const auto styleIt = m_brushPropertyToStyleSubProperty.find(property);
+    if (styleIt  != m_brushPropertyToStyleSubProperty.end()) {
+        QtProperty *styleProp = styleIt .value();
         m_brushStyleSubPropertyToProperty.remove(styleProp);
-        m_brushPropertyToStyleSubProperty.erase(subit);
+        m_brushPropertyToStyleSubProperty.erase(styleIt );
         delete styleProp;
     }
     // color
-    subit = m_brushPropertyToColorSubProperty.find(property);
-    if (subit != m_brushPropertyToColorSubProperty.end()) {
-        QtProperty *colorProp = subit.value();
+    const auto colorIt = m_brushPropertyToColorSubProperty.find(property);
+    if (colorIt  != m_brushPropertyToColorSubProperty.end()) {
+        QtProperty *colorProp = colorIt .value();
         m_brushColorSubPropertyToProperty.remove(colorProp);
-        m_brushPropertyToColorSubProperty.erase(subit);
+        m_brushPropertyToColorSubProperty.erase(colorIt );
         delete colorProp;
     }
     return true;
@@ -168,7 +172,7 @@ bool BrushPropertyManager::uninitializeProperty(QtProperty *property)
 
 void BrushPropertyManager::slotPropertyDestroyed(QtProperty *property)
 {
-    PropertyToPropertyMap::iterator subit = m_brushStyleSubPropertyToProperty.find(property);
+    auto subit = m_brushStyleSubPropertyToProperty.find(property);
     if (subit != m_brushStyleSubPropertyToProperty.end()) {
         m_brushPropertyToStyleSubProperty[subit.value()] = 0;
         m_brushStyleSubPropertyToProperty.erase(subit);
@@ -217,7 +221,7 @@ int BrushPropertyManager::setValue(QtVariantPropertyManager *vm, QtProperty *pro
 {
     if (value.metaType().id() != QMetaType::QBrush)
         return DesignerPropertyManager::NoMatch;
-    const PropertyBrushMap::iterator brit = m_brushValues.find(property);
+    const auto brit = m_brushValues.find(property);
     if (brit == m_brushValues.end())
         return DesignerPropertyManager::NoMatch;
 
@@ -235,7 +239,7 @@ int BrushPropertyManager::setValue(QtVariantPropertyManager *vm, QtProperty *pro
 
 bool BrushPropertyManager::valueText(const QtProperty *property, QString *text) const
 {
-    const PropertyBrushMap::const_iterator brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
+    const auto brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
     if (brit == m_brushValues.constEnd())
         return false;
     const QBrush &brush = brit.value();
@@ -247,7 +251,7 @@ bool BrushPropertyManager::valueText(const QtProperty *property, QString *text) 
 
 bool BrushPropertyManager::valueIcon(const QtProperty *property, QIcon *icon) const
 {
-    const PropertyBrushMap::const_iterator brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
+    const auto brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
     if (brit == m_brushValues.constEnd())
         return false;
     *icon = QtPropertyBrowserUtils::brushValueIcon(brit.value());
@@ -256,7 +260,7 @@ bool BrushPropertyManager::valueIcon(const QtProperty *property, QIcon *icon) co
 
 bool BrushPropertyManager::value(const QtProperty *property, QVariant *v) const
 {
-    const PropertyBrushMap::const_iterator brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
+    const auto brit = m_brushValues.constFind(const_cast<QtProperty *>(property));
     if (brit == m_brushValues.constEnd())
         return false;
     v->setValue(brit.value());

@@ -35,7 +35,9 @@
 
 QT_BEGIN_NAMESPACE
 
-static QIcon createIconSet(const QString &name)
+using namespace Qt::StringLiterals;
+
+static QIcon afwCreateIconSet(const QString &name)
 {
     QStringList candidates = QStringList()
         << (QString::fromUtf8(":/qt-project.org/shared/images/") + name)
@@ -77,32 +79,32 @@ AbstractFindWidget::AbstractFindWidget(FindFlags flags, QWidget *parent)
 #endif
 
     m_toolClose = new QToolButton(this);
-    m_toolClose->setIcon(createIconSet(QLatin1String("closetab.png")));
+    m_toolClose->setIcon(afwCreateIconSet("closetab.png"_L1));
     m_toolClose->setAutoRaise(true);
     layOut->addWidget(m_toolClose);
-    connect(m_toolClose, SIGNAL(clicked()), SLOT(deactivate()));
+    connect(m_toolClose, &QAbstractButton::clicked, this, &AbstractFindWidget::deactivate);
 
     m_editFind = new QLineEdit(this);
     layOut->addWidget(m_editFind);
-    connect(m_editFind, SIGNAL(returnPressed()), SLOT(findNext()));
-    connect(m_editFind, SIGNAL(textChanged(QString)), SLOT(findCurrentText()));
-    connect(m_editFind, SIGNAL(textChanged(QString)), SLOT(updateButtons()));
+    connect(m_editFind, &QLineEdit::returnPressed, this, &AbstractFindWidget::findNext);
+    connect(m_editFind, &QLineEdit::textChanged, this, &AbstractFindWidget::findCurrentText);
+    connect(m_editFind, &QLineEdit::textChanged, this, &AbstractFindWidget::updateButtons);
 
     m_toolPrevious = new QToolButton(this);
     m_toolPrevious->setAutoRaise(true);
     m_toolPrevious->setText(tr("&Previous"));
     m_toolPrevious->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_toolPrevious->setIcon(createIconSet(QLatin1String("previous.png")));
+    m_toolPrevious->setIcon(afwCreateIconSet("previous.png"_L1));
     layOut->addWidget(m_toolPrevious);
-    connect(m_toolPrevious, SIGNAL(clicked()), SLOT(findPrevious()));
+    connect(m_toolPrevious, &QAbstractButton::clicked, this, &AbstractFindWidget::findPrevious);
 
     m_toolNext = new QToolButton(this);
     m_toolNext->setAutoRaise(true);
     m_toolNext->setText(tr("&Next"));
     m_toolNext->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    m_toolNext->setIcon(createIconSet(QLatin1String("next.png")));
+    m_toolNext->setIcon(afwCreateIconSet("next.png"_L1));
     layOut->addWidget(m_toolNext);
-    connect(m_toolNext, SIGNAL(clicked()), SLOT(findNext()));
+    connect(m_toolNext, &QAbstractButton::clicked, this, &AbstractFindWidget::findNext);
 
     if (flags & NarrowLayout) {
         QSizePolicy sp(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -124,7 +126,8 @@ AbstractFindWidget::AbstractFindWidget(FindFlags flags, QWidget *parent)
     if (!(flags & NoCaseSensitive)) {
         m_checkCase = new QCheckBox(tr("&Case sensitive"), this);
         layOut->addWidget(m_checkCase);
-        connect(m_checkCase, SIGNAL(toggled(bool)), SLOT(findCurrentText()));
+        connect(m_checkCase, &QAbstractButton::toggled,
+                this, &AbstractFindWidget::findCurrentText);
     } else {
         m_checkCase = 0;
     }
@@ -132,7 +135,8 @@ AbstractFindWidget::AbstractFindWidget(FindFlags flags, QWidget *parent)
     if (!(flags & NoWholeWords)) {
         m_checkWholeWords = new QCheckBox(tr("Whole &words"), this);
         layOut->addWidget(m_checkWholeWords);
-        connect(m_checkWholeWords, SIGNAL(toggled(bool)), SLOT(findCurrentText()));
+        connect(m_checkWholeWords, &QAbstractButton::toggled,
+                this, &AbstractFindWidget::findCurrentText);
     } else {
         m_checkWholeWords = 0;
     }
@@ -167,7 +171,7 @@ AbstractFindWidget::~AbstractFindWidget() = default;
  */
 QIcon AbstractFindWidget::findIconSet()
 {
-    return createIconSet(QLatin1String("searchfind.png"));
+    return afwCreateIconSet("searchfind.png"_L1);
 }
 
 /*!

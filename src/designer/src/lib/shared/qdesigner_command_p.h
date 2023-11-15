@@ -156,19 +156,17 @@ private:
 // Helper to correctly unmanage a widget and its children for delete operations
 class  QDESIGNER_SHARED_EXPORT ManageWidgetCommandHelper {
 public:
-    using WidgetVector = QList<QWidget *>;
-
     ManageWidgetCommandHelper();
     void init(const QDesignerFormWindowInterface *fw, QWidget *widget);
-    void init(QWidget *widget, const WidgetVector &managedChildren);
+    void init(QWidget *widget, const QWidgetList &managedChildren);
 
     void manage(QDesignerFormWindowInterface *fw);
     void unmanage(QDesignerFormWindowInterface *fw);
 
-    const WidgetVector &managedChildren() const { return m_managedChildren; }
+    const QWidgetList &managedChildren() const { return m_managedChildren; }
 private:
     QWidget *m_widget = nullptr;
-    WidgetVector m_managedChildren;
+    QWidgetList m_managedChildren;
 };
 
 class QDESIGNER_SHARED_EXPORT DeleteWidgetCommand: public QDesignerFormWindowCommand
@@ -858,7 +856,6 @@ struct QDESIGNER_SHARED_EXPORT ListContents {
 struct QDESIGNER_SHARED_EXPORT TableWidgetContents {
 
     using CellRowColumnAddress = QPair<int, int>;
-    using TableItemMap = QMap<CellRowColumnAddress, ItemData>;
 
     TableWidgetContents();
     void clear();
@@ -877,7 +874,7 @@ struct QDESIGNER_SHARED_EXPORT TableWidgetContents {
     int m_rowCount = 0;
     ListContents m_horizontalHeader;
     ListContents m_verticalHeader;
-    TableItemMap m_items;
+    QMap<CellRowColumnAddress, ItemData> m_items;
 };
 
 class QDESIGNER_SHARED_EXPORT ChangeTableContentsCommand: public QDesignerFormWindowCommand

@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only
 
 #include "qttreepropertybrowser.h"
-#include <QtCore/QSet>
-#include <QtCore/QMap>
+
+#include <QtCore/QHash>
+#include <QtGui/QFocusEvent>
 #include <QtGui/QIcon>
-#include <QtWidgets/QTreeWidget>
-#include <QtWidgets/QItemDelegate>
+#include <QtGui/QPainter>
+#include <QtGui/QPalette>
+#include <QtWidgets/QApplication>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QHeaderView>
-#include <QtGui/QPainter>
-#include <QtWidgets/QApplication>
-#include <QtGui/QFocusEvent>
+#include <QtWidgets/QItemDelegate>
 #include <QtWidgets/QStyle>
-#include <QtGui/QPalette>
+#include <QtWidgets/QTreeWidget>
 
 QT_BEGIN_NAMESPACE
 
@@ -61,10 +61,10 @@ public:
 private:
     void updateItem(QTreeWidgetItem *item);
 
-    QMap<QtBrowserItem *, QTreeWidgetItem *> m_indexToItem;
-    QMap<QTreeWidgetItem *, QtBrowserItem *> m_itemToIndex;
+    QHash<QtBrowserItem *, QTreeWidgetItem *> m_indexToItem;
+    QHash<QTreeWidgetItem *, QtBrowserItem *> m_itemToIndex;
 
-    QMap<QtBrowserItem *, QColor> m_indexToBackgroundColor;
+    QHash<QtBrowserItem *, QColor> m_indexToBackgroundColor;
 
     QtPropertyEditorView *m_treeWidget;
 
@@ -102,7 +102,7 @@ QtPropertyEditorView::QtPropertyEditorView(QWidget *parent) :
     QTreeWidget(parent),
     m_editorPrivate(0)
 {
-    connect(header(), SIGNAL(sectionDoubleClicked(int)), this, SLOT(resizeColumnToContents(int)));
+    connect(header(), &QHeaderView::sectionDoubleClicked, this, &QTreeView::resizeColumnToContents);
 }
 
 void QtPropertyEditorView::drawRow(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -215,10 +215,10 @@ private slots:
 private:
     int indentation(const QModelIndex &index) const;
 
-    typedef QMap<QWidget *, QtProperty *> EditorToPropertyMap;
+    using EditorToPropertyMap = QHash<QWidget *, QtProperty *>;
     mutable EditorToPropertyMap m_editorToProperty;
 
-    typedef QMap<QtProperty *, QWidget *> PropertyToEditorMap;
+    using PropertyToEditorMap = QHash<QtProperty *, QWidget *>;
     mutable PropertyToEditorMap m_propertyToEditor;
     QtTreePropertyBrowserPrivate *m_editorPrivate;
     mutable QTreeWidgetItem *m_editedItem;
@@ -243,22 +243,22 @@ int QtPropertyEditorDelegate::indentation(const QModelIndex &index) const
 
 void QtPropertyEditorDelegate::slotEditorDestroyed(QObject *object)
 {
-    if (QWidget *w = qobject_cast<QWidget *>(object)) {
-        const EditorToPropertyMap::iterator it = m_editorToProperty.find(w);
+    if (auto *w = qobject_cast<QWidget *>(object)) {
+        const auto it = m_editorToProperty.find(w);
         if (it != m_editorToProperty.end()) {
             m_propertyToEditor.remove(it.value());
             m_editorToProperty.erase(it);
         }
         if (m_editedWidget == w) {
-            m_editedWidget = 0;
-            m_editedItem = 0;
+            m_editedWidget = nullptr;
+            m_editedItem = nullptr;
         }
     }
 }
 
 void QtPropertyEditorDelegate::closeEditor(QtProperty *property)
 {
-    if (QWidget *w = m_propertyToEditor.value(property, 0))
+    if (QWidget *w = m_propertyToEditor.value(property, nullptr))
         w->deleteLater();
 }
 
@@ -273,7 +273,8 @@ QWidget *QtPropertyEditorDelegate::createEditor(QWidget *parent,
             if (editor) {
                 editor->setAutoFillBackground(true);
                 editor->installEventFilter(const_cast<QtPropertyEditorDelegate *>(this));
-                connect(editor, SIGNAL(destroyed(QObject*)), this, SLOT(slotEditorDestroyed(QObject*)));
+                connect(editor, &QObject::destroyed,
+                        this, &QtPropertyEditorDelegate::slotEditorDestroyed);
                 m_propertyToEditor[property] = editor;
                 m_editorToProperty[editor] = property;
                 m_editedItem = item;
@@ -282,7 +283,7 @@ QWidget *QtPropertyEditorDelegate::createEditor(QWidget *parent,
             return editor;
         }
     }
-    return 0;
+    return nullptr;
 }
 
 void QtPropertyEditorDelegate::updateEditorGeometry(QWidget *editor,
@@ -392,7 +393,7 @@ static QIcon drawIndicatorIcon(const QPalette &palette, QStyle *style)
 
 void QtTreePropertyBrowserPrivate::init(QWidget *parent)
 {
-    QHBoxLayout *layout = new QHBoxLayout(parent);
+    auto *layout = new QHBoxLayout(parent);
     layout->setContentsMargins(QMargins());
     m_treeWidget = new QtPropertyEditorView(parent);
     m_treeWidget->setEditorPrivate(this);
@@ -414,23 +415,27 @@ void QtTreePropertyBrowserPrivate::init(QWidget *parent)
 
     m_expandIcon = drawIndicatorIcon(q_ptr->palette(), q_ptr->style());
 
-    QObject::connect(m_treeWidget, SIGNAL(collapsed(QModelIndex)), q_ptr, SLOT(slotCollapsed(QModelIndex)));
-    QObject::connect(m_treeWidget, SIGNAL(expanded(QModelIndex)), q_ptr, SLOT(slotExpanded(QModelIndex)));
-    QObject::connect(m_treeWidget, SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)), q_ptr, SLOT(slotCurrentTreeItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)));
+    QObject::connect(m_treeWidget, &QTreeView::collapsed,
+                     q_ptr, [this](const QModelIndex &index) { slotCollapsed(index); });
+    QObject::connect(m_treeWidget, &QTreeView::expanded,
+                     q_ptr, [this](const QModelIndex &index) { slotExpanded(index); });
+    QObject::connect(m_treeWidget, &QTreeWidget::currentItemChanged,
+                     q_ptr, [this](QTreeWidgetItem *current, QTreeWidgetItem *previous)
+                     { slotCurrentTreeItemChanged(current, previous); });
 }
 
 QtBrowserItem *QtTreePropertyBrowserPrivate::currentItem() const
 {
     if (QTreeWidgetItem *treeItem = m_treeWidget->currentItem())
         return m_itemToIndex.value(treeItem);
-    return 0;
+    return nullptr;
 }
 
 void QtTreePropertyBrowserPrivate::setCurrentItem(QtBrowserItem *browserItem, bool block)
 {
     const bool blocked = block ? m_treeWidget->blockSignals(true) : false;
-    if (browserItem == 0)
-        m_treeWidget->setCurrentItem(0);
+    if (browserItem == nullptr)
+        m_treeWidget->setCurrentItem(nullptr);
     else
         m_treeWidget->setCurrentItem(m_indexToItem.value(browserItem));
     if (block)
@@ -443,7 +448,7 @@ QtProperty *QtTreePropertyBrowserPrivate::indexToProperty(const QModelIndex &ind
     QtBrowserItem *idx = m_itemToIndex.value(item);
     if (idx)
         return idx->property();
-    return 0;
+    return nullptr;
 }
 
 QtBrowserItem *QtTreePropertyBrowserPrivate::indexToBrowserItem(const QModelIndex &index) const
@@ -586,14 +591,14 @@ void QtTreePropertyBrowserPrivate::updateItem(QTreeWidgetItem *item)
 QColor QtTreePropertyBrowserPrivate::calculatedBackgroundColor(QtBrowserItem *item) const
 {
     QtBrowserItem *i = item;
-    const QMap<QtBrowserItem *, QColor>::const_iterator itEnd = m_indexToBackgroundColor.constEnd();
+    const auto itEnd = m_indexToBackgroundColor.constEnd();
     while (i) {
-        QMap<QtBrowserItem *, QColor>::const_iterator it = m_indexToBackgroundColor.constFind(i);
+        auto it = m_indexToBackgroundColor.constFind(i);
         if (it != itEnd)
             return it.value();
         i = i->parent();
     }
-    return QColor();
+    return {};
 }
 
 void QtTreePropertyBrowserPrivate::slotCollapsed(const QModelIndex &index)
@@ -633,7 +638,7 @@ QTreeWidgetItem *QtTreePropertyBrowserPrivate::editedItem() const
 
 void QtTreePropertyBrowserPrivate::editItem(QtBrowserItem *browserItem)
 {
-    if (QTreeWidgetItem *treeItem = m_indexToItem.value(browserItem, 0)) {
+    if (QTreeWidgetItem *treeItem = m_indexToItem.value(browserItem, nullptr)) {
         m_treeWidget->setCurrentItem (treeItem, 1);
         m_treeWidget->editItem(treeItem, 1);
     }
@@ -694,7 +699,9 @@ QtTreePropertyBrowser::QtTreePropertyBrowser(QWidget *parent)
     d_ptr->q_ptr = this;
 
     d_ptr->init(this);
-    connect(this, SIGNAL(currentItemChanged(QtBrowserItem*)), this, SLOT(slotCurrentBrowserItemChanged(QtBrowserItem*)));
+    QObject::connect(this, &QtAbstractPropertyBrowser::currentItemChanged,
+                     this, [this](QtBrowserItem *current)
+                     { d_ptr->slotCurrentBrowserItemChanged(current); });
 }
 
 /*!

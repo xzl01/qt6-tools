@@ -40,11 +40,10 @@ bool QAxWidgetExtraInfo::saveWidgetExtraInfo(DomWidget *ui_widget)
     /* Turn off standard setters and make sure "control" is in front,
      * otherwise, previews will not work as the properties are not applied via
      * the caching property sheet, them. */
-    typedef QList<DomProperty *> DomPropertyList;
-    DomPropertyList props = ui_widget->elementProperty();
-    const int size = props.size();
+    QList<DomProperty *> props = ui_widget->elementProperty();
+    const qsizetype size = props.size();
     const QString controlProperty = QLatin1String(QAxWidgetPropertySheet::controlPropertyName);
-    for (int i = 0; i < size; i++) {
+    for (qsizetype i = 0; i < size; ++i) {
         props.at(i)->setAttributeStdset(false);
         if (i > 0 && props.at(i)->attributeName() == controlProperty) {
             qSwap(props[0], props[i]);

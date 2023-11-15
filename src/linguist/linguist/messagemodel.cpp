@@ -95,8 +95,8 @@ DataModel::DataModel(QObject *parent)
     m_srcCharsSpc(0),
     m_language(QLocale::Language(-1)),
     m_sourceLanguage(QLocale::Language(-1)),
-    m_country(QLocale::Country(-1)),
-    m_sourceCountry(QLocale::Country(-1))
+    m_territory(QLocale::Territory(-1)),
+    m_sourceTerritory(QLocale::Territory(-1))
 {}
 
 QStringList DataModel::normalizedTranslations(const MessageItem &m) const
@@ -182,15 +182,15 @@ bool DataModel::load(const QString &fileName, bool *langGuessed, QWidget *parent
     if (!dupes.byId.isEmpty() || !dupes.byContents.isEmpty()) {
         QString err = tr("<qt>Duplicate messages found in '%1':").arg(fileName.toHtmlEscaped());
         int numdups = 0;
-        for (int i : dupes.byId) {
+        for (auto it = dupes.byId.begin(); it != dupes.byId.end(); ++it) {
             if (++numdups >= 5) {
                 err += tr("<p>[more duplicates omitted]");
                 goto doWarn;
             }
-            err += tr("<p>* ID: %1").arg(tor.message(i).id().toHtmlEscaped());
+            err += tr("<p>* ID: %1").arg(tor.message(it.key()).id().toHtmlEscaped());
         }
-        for (int j : dupes.byContents) {
-            const TranslatorMessage &msg = tor.message(j);
+        for (auto it = dupes.byContents.begin(); it != dupes.byContents.end(); ++it) {
+            const TranslatorMessage &msg = tor.message(it.key());
             if (++numdups >= 5) {
                 err += tr("<p>[more duplicates omitted]");
                 break;
@@ -258,15 +258,15 @@ bool DataModel::load(const QString &fileName, bool *langGuessed, QWidget *parent
         *langGuessed = true;
     }
     QLocale::Language l;
-    QLocale::Country c;
-    Translator::languageAndCountry(lang, &l, &c);
+    QLocale::Territory c;
+    Translator::languageAndTerritory(lang, &l, &c);
     if (l == QLocale::C) {
         QLocale sys;
         l = sys.language();
-        c = sys.country();
+        c = sys.territory();
         *langGuessed = true;
     }
-    if (!setLanguageAndCountry(l, c))
+    if (!setLanguageAndTerritory(l, c))
         QMessageBox::warning(parent, QObject::tr("Qt Linguist"),
                              tr("Linguist does not know the plural rules for '%1'.\n"
                                 "Will assume a single universal form.")
@@ -278,11 +278,11 @@ bool DataModel::load(const QString &fileName, bool *langGuessed, QWidget *parent
     lang = tor.sourceLanguageCode();
     if (lang.isEmpty()) {
         l = QLocale::C;
-        c = QLocale::AnyCountry;
+        c = QLocale::AnyTerritory;
     } else {
-        Translator::languageAndCountry(lang, &l, &c);
+        Translator::languageAndTerritory(lang, &l, &c);
     }
-    setSourceLanguageAndCountry(l, c);
+    setSourceLanguageAndTerritory(l, c);
 
     setModified(false);
 
@@ -295,8 +295,8 @@ bool DataModel::save(const QString &fileName, QWidget *parent)
     for (DataModelIterator it(this); it.isValid(); ++it)
         tor.append(it.current()->message());
 
-    tor.setLanguageCode(Translator::makeLanguageCode(m_language, m_country));
-    tor.setSourceLanguageCode(Translator::makeLanguageCode(m_sourceLanguage, m_sourceCountry));
+    tor.setLanguageCode(Translator::makeLanguageCode(m_language, m_territory));
+    tor.setSourceLanguageCode(Translator::makeLanguageCode(m_sourceLanguage, m_sourceTerritory));
     tor.setLocationsType(m_relativeLocations ? Translator::RelativeLocations
                                              : Translator::AbsoluteLocations);
     tor.setExtras(m_extra);
@@ -328,7 +328,7 @@ bool DataModel::release(const QString &fileName, bool verbose, bool ignoreUnfini
         return false;
     }
     Translator tor;
-    QLocale locale(m_language, m_country);
+    QLocale locale(m_language, m_territory);
     tor.setLanguageCode(locale.name());
     for (DataModelIterator it(this); it.isValid(); ++it)
         tor.append(it.current()->message());
@@ -336,6 +336,9 @@ bool DataModel::release(const QString &fileName, bool verbose, bool ignoreUnfini
     cd.m_verbose = verbose;
     cd.m_ignoreUnfinished = ignoreUnfinished;
     cd.m_saveMode = mode;
+    cd.m_idBased =
+            std::all_of(tor.messages().begin(), tor.messages().end(),
+                        [](const TranslatorMessage &message) { return !message.id().isEmpty(); });
     bool ok = saveQM(tor, file, cd);
     if (!ok)
         QMessageBox::warning(parent, QObject::tr("Qt Linguist"), cd.error());
@@ -360,21 +363,30 @@ void DataModel::doCharCounting(const QString &text, int &trW, int &trC, int &trC
     }
 }
 
-bool DataModel::setLanguageAndCountry(QLocale::Language lang, QLocale::Country country)
+bool DataModel::setLanguageAndTerritory(QLocale::Language lang, QLocale::Territory territory)
 {
-    if (m_language == lang && m_country == country)
+    if (m_language == lang && m_territory == territory)
         return true;
     m_language = lang;
-    m_country = country;
+    m_territory = territory;
 
     if (lang == QLocale::C || uint(lang) > uint(QLocale::LastLanguage)) // XXX does this make any sense?
         lang = QLocale::English;
     QByteArray rules;
-    bool ok = getNumerusInfo(lang, country, &rules, &m_numerusForms, 0);
-    QLocale loc(lang, country);
-    m_localizedLanguage = QLocale::countriesForLanguage(lang).size() > 1
-            //: <language> (<country>)
-            ? tr("%1 (%2)").arg(loc.nativeLanguageName(), loc.nativeCountryName())
+    bool ok = getNumerusInfo(lang, territory, &rules, &m_numerusForms, 0);
+    QLocale loc(lang, territory);
+    // Add territory name if we couldn't match the (lang, territory) combination,
+    // or if the language is used in more than one territory.
+    const bool mentionTerritory = (loc.territory() != territory) || [lang, territory]() {
+        const auto locales = QLocale::matchingLocales(lang, QLocale::AnyScript,
+                                                      QLocale::AnyTerritory);
+        return std::any_of(locales.cbegin(), locales.cend(), [territory](const QLocale &locale) {
+            return locale.territory() != territory;
+        });
+    }();
+    m_localizedLanguage = mentionTerritory
+            //: <language> (<territory>)
+            ? tr("%1 (%2)").arg(loc.nativeLanguageName(), loc.nativeTerritoryName())
             : loc.nativeLanguageName();
     m_countRefNeeds.clear();
     for (int i = 0; i < rules.size(); ++i) {
@@ -391,12 +403,12 @@ bool DataModel::setLanguageAndCountry(QLocale::Language lang, QLocale::Country c
     return ok;
 }
 
-void DataModel::setSourceLanguageAndCountry(QLocale::Language lang, QLocale::Country country)
+void DataModel::setSourceLanguageAndTerritory(QLocale::Language lang, QLocale::Territory territory)
 {
-    if (m_sourceLanguage == lang && m_sourceCountry == country)
+    if (m_sourceLanguage == lang && m_sourceTerritory == territory)
         return;
     m_sourceLanguage = lang;
-    m_sourceCountry = country;
+    m_sourceTerritory = territory;
     setModified(true);
 }
 

@@ -77,6 +77,8 @@ Q_DECLARE_METATYPE(QWidget*)
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace {
 class BlockSelection
 {
@@ -143,8 +145,7 @@ private:
     using SelectionPool = QList<WidgetSelection *>;
     SelectionPool m_selectionPool;
 
-    typedef QHash<QWidget *, WidgetSelection *> SelectionHash;
-    SelectionHash m_usedSelections;
+    QHash<QWidget *, WidgetSelection *> m_usedSelections;
 };
 
 FormWindow::Selection::Selection() = default;
@@ -179,9 +180,9 @@ WidgetSelection *FormWindow::Selection::addWidget(FormWindow* fw, QWidget *w)
         return rc;
     }
     // find a free one in the pool
-    for (auto it = m_selectionPool.constBegin(), pend = m_selectionPool.constEnd(); it != pend; ++it) {
-        if (! (*it)->isUsed()) {
-            rc = *it;
+    for (auto *s : std::as_const(m_selectionPool)) {
+        if (!s->isUsed()) {
+            rc = s;
             break;
         }
     }
@@ -454,11 +455,11 @@ void FormWindow::setMainContainer(QWidget *w)
     manageWidget(m_mainContainer);
 
     if (QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), m_mainContainer)) {
-        sheet->setVisible(sheet->indexOf(QStringLiteral("windowTitle")), true);
-        sheet->setVisible(sheet->indexOf(QStringLiteral("windowIcon")), true);
-        sheet->setVisible(sheet->indexOf(QStringLiteral("windowModality")), true);
-        sheet->setVisible(sheet->indexOf(QStringLiteral("windowOpacity")), true);
-        sheet->setVisible(sheet->indexOf(QStringLiteral("windowFilePath")), true);
+        sheet->setVisible(sheet->indexOf(u"windowTitle"_s), true);
+        sheet->setVisible(sheet->indexOf(u"windowIcon"_s), true);
+        sheet->setVisible(sheet->indexOf(u"windowModality"_s), true);
+        sheet->setVisible(sheet->indexOf(u"windowOpacity"_s), true);
+        sheet->setVisible(sheet->indexOf(u"windowFilePath"_s), true);
         // ### generalize
     }
 
@@ -924,13 +925,9 @@ bool FormWindow::isMainContainer(const QWidget *w) const
 void FormWindow::updateChildSelections(QWidget *w)
 {
     const QWidgetList l = w->findChildren<QWidget*>();
-    if (!l.isEmpty()) {
-        const QWidgetList::const_iterator lcend = l.constEnd();
-        for (QWidgetList::const_iterator it = l.constBegin(); it != lcend; ++it) {
-            QWidget *w = *it;
-            if (isManaged(w))
-                updateSelection(w);
-        }
+    for (auto *w : l) {
+        if (isManaged(w))
+            updateSelection(w);
     }
 }
 
@@ -993,129 +990,98 @@ static inline void insertNames(const QDesignerMetaDataBaseInterface *metaDataBas
 
 static QSet<QString> languageKeywords()
 {
-    static QSet<QString> keywords;
-    if (keywords.isEmpty()) {
+    static const QSet<QString> keywords = {
         // C++ keywords
-        keywords.insert(QStringLiteral("asm"));
-        keywords.insert(QStringLiteral("auto"));
-        keywords.insert(QStringLiteral("bool"));
-        keywords.insert(QStringLiteral("break"));
-        keywords.insert(QStringLiteral("case"));
-        keywords.insert(QStringLiteral("catch"));
-        keywords.insert(QStringLiteral("char"));
-        keywords.insert(QStringLiteral("class"));
-        keywords.insert(QStringLiteral("const"));
-        keywords.insert(QStringLiteral("const_cast"));
-        keywords.insert(QStringLiteral("continue"));
-        keywords.insert(QStringLiteral("default"));
-        keywords.insert(QStringLiteral("delete"));
-        keywords.insert(QStringLiteral("do"));
-        keywords.insert(QStringLiteral("double"));
-        keywords.insert(QStringLiteral("dynamic_cast"));
-        keywords.insert(QStringLiteral("else"));
-        keywords.insert(QStringLiteral("enum"));
-        keywords.insert(QStringLiteral("explicit"));
-        keywords.insert(QStringLiteral("export"));
-        keywords.insert(QStringLiteral("extern"));
-        keywords.insert(QStringLiteral("false"));
-        keywords.insert(QStringLiteral("float"));
-        keywords.insert(QStringLiteral("for"));
-        keywords.insert(QStringLiteral("friend"));
-        keywords.insert(QStringLiteral("goto"));
-        keywords.insert(QStringLiteral("if"));
-        keywords.insert(QStringLiteral("inline"));
-        keywords.insert(QStringLiteral("int"));
-        keywords.insert(QStringLiteral("long"));
-        keywords.insert(QStringLiteral("mutable"));
-        keywords.insert(QStringLiteral("namespace"));
-        keywords.insert(QStringLiteral("new"));
-        keywords.insert(QStringLiteral("NULL"));
-        keywords.insert(QStringLiteral("operator"));
-        keywords.insert(QStringLiteral("private"));
-        keywords.insert(QStringLiteral("protected"));
-        keywords.insert(QStringLiteral("public"));
-        keywords.insert(QStringLiteral("register"));
-        keywords.insert(QStringLiteral("reinterpret_cast"));
-        keywords.insert(QStringLiteral("return"));
-        keywords.insert(QStringLiteral("short"));
-        keywords.insert(QStringLiteral("signed"));
-        keywords.insert(QStringLiteral("sizeof"));
-        keywords.insert(QStringLiteral("static"));
-        keywords.insert(QStringLiteral("static_cast"));
-        keywords.insert(QStringLiteral("struct"));
-        keywords.insert(QStringLiteral("switch"));
-        keywords.insert(QStringLiteral("template"));
-        keywords.insert(QStringLiteral("this"));
-        keywords.insert(QStringLiteral("throw"));
-        keywords.insert(QStringLiteral("true"));
-        keywords.insert(QStringLiteral("try"));
-        keywords.insert(QStringLiteral("typedef"));
-        keywords.insert(QStringLiteral("typeid"));
-        keywords.insert(QStringLiteral("typename"));
-        keywords.insert(QStringLiteral("union"));
-        keywords.insert(QStringLiteral("unsigned"));
-        keywords.insert(QStringLiteral("using"));
-        keywords.insert(QStringLiteral("virtual"));
-        keywords.insert(QStringLiteral("void"));
-        keywords.insert(QStringLiteral("volatile"));
-        keywords.insert(QStringLiteral("wchar_t"));
-        keywords.insert(QStringLiteral("while"));
+        u"asm"_s,
+        u"assert"_s,
+        u"auto"_s,
+        u"bool"_s,
+        u"break"_s,
+        u"case"_s,
+        u"catch"_s,
+        u"char"_s,
+        u"class"_s,
+        u"const"_s,
+        u"const_cast"_s,
+        u"continue"_s,
+        u"default"_s,
+        u"delete"_s,
+        u"do"_s,
+        u"double"_s,
+        u"dynamic_cast"_s,
+        u"else"_s,
+        u"enum"_s,
+        u"explicit"_s,
+        u"export"_s,
+        u"extern"_s,
+        u"false"_s,
+        u"final"_s,
+        u"float"_s,
+        u"for"_s,
+        u"friend"_s,
+        u"goto"_s,
+        u"if"_s,
+        u"inline"_s,
+        u"int"_s,
+        u"long"_s,
+        u"mutable"_s,
+        u"namespace"_s,
+        u"new"_s,
+        u"noexcept"_s,
+        u"NULL"_s,
+        u"nullptr"_s,
+        u"operator"_s,
+        u"override"_s,
+        u"private"_s,
+        u"protected"_s,
+        u"public"_s,
+        u"register"_s,
+        u"reinterpret_cast"_s,
+        u"return"_s,
+        u"short"_s,
+        u"signed"_s,
+        u"sizeof"_s,
+        u"static"_s,
+        u"static_cast"_s,
+        u"struct"_s,
+        u"switch"_s,
+        u"template"_s,
+        u"this"_s,
+        u"throw"_s,
+        u"true"_s,
+        u"try"_s,
+        u"typedef"_s,
+        u"typeid"_s,
+        u"typename"_s,
+        u"union"_s,
+        u"unsigned"_s,
+        u"using"_s,
+        u"virtual"_s,
+        u"void"_s,
+        u"volatile"_s,
+        u"wchar_t"_s,
+        u"while"_s,
 
         // java keywords
-        keywords.insert(QStringLiteral("abstract"));
-        keywords.insert(QStringLiteral("assert"));
-        keywords.insert(QStringLiteral("boolean"));
-        keywords.insert(QStringLiteral("break"));
-        keywords.insert(QStringLiteral("byte"));
-        keywords.insert(QStringLiteral("case"));
-        keywords.insert(QStringLiteral("catch"));
-        keywords.insert(QStringLiteral("char"));
-        keywords.insert(QStringLiteral("class"));
-        keywords.insert(QStringLiteral("const"));
-        keywords.insert(QStringLiteral("continue"));
-        keywords.insert(QStringLiteral("default"));
-        keywords.insert(QStringLiteral("do"));
-        keywords.insert(QStringLiteral("double"));
-        keywords.insert(QStringLiteral("else"));
-        keywords.insert(QStringLiteral("enum"));
-        keywords.insert(QStringLiteral("extends"));
-        keywords.insert(QStringLiteral("false"));
-        keywords.insert(QStringLiteral("final"));
-        keywords.insert(QStringLiteral("finality"));
-        keywords.insert(QStringLiteral("float"));
-        keywords.insert(QStringLiteral("for"));
-        keywords.insert(QStringLiteral("goto"));
-        keywords.insert(QStringLiteral("if"));
-        keywords.insert(QStringLiteral("implements"));
-        keywords.insert(QStringLiteral("import"));
-        keywords.insert(QStringLiteral("instanceof"));
-        keywords.insert(QStringLiteral("int"));
-        keywords.insert(QStringLiteral("interface"));
-        keywords.insert(QStringLiteral("long"));
-        keywords.insert(QStringLiteral("native"));
-        keywords.insert(QStringLiteral("new"));
-        keywords.insert(QStringLiteral("null"));
-        keywords.insert(QStringLiteral("package"));
-        keywords.insert(QStringLiteral("private"));
-        keywords.insert(QStringLiteral("protected"));
-        keywords.insert(QStringLiteral("public"));
-        keywords.insert(QStringLiteral("return"));
-        keywords.insert(QStringLiteral("short"));
-        keywords.insert(QStringLiteral("static"));
-        keywords.insert(QStringLiteral("strictfp"));
-        keywords.insert(QStringLiteral("super"));
-        keywords.insert(QStringLiteral("switch"));
-        keywords.insert(QStringLiteral("synchronized"));
-        keywords.insert(QStringLiteral("this"));
-        keywords.insert(QStringLiteral("throw"));
-        keywords.insert(QStringLiteral("throws"));
-        keywords.insert(QStringLiteral("transient"));
-        keywords.insert(QStringLiteral("true"));
-        keywords.insert(QStringLiteral("try"));
-        keywords.insert(QStringLiteral("void"));
-        keywords.insert(QStringLiteral("volatile"));
-        keywords.insert(QStringLiteral("while"));
-    }
+        u"abstract"_s,
+        u"boolean"_s,
+        u"byte"_s,
+        u"extends"_s,
+        u"finality"_s,
+        u"implements"_s,
+        u"import"_s,
+        u"instanceof"_s,
+        u"interface"_s,
+        u"native"_s,
+        u"null"_s,
+        u"package"_s,
+        u"strictfp"_s,
+        u"super"_s,
+        u"synchronized"_s,
+        u"throws"_s,
+        u"transient"_s,
+    };
+
     return keywords;
 }
 
@@ -1149,8 +1115,7 @@ bool FormWindow::unify(QObject *w, QString &s, bool changeIt)
     if (!buttonGroupChildren.isEmpty())
         insertNames(metaDataBase, buttonGroupChildren.constBegin(), buttonGroupChildren.constEnd(), w, existingNames);
 
-    const StringSet::const_iterator enEnd = existingNames.constEnd();
-    if (existingNames.constFind(s) == enEnd)
+    if (!existingNames.contains(s))
         return true;
     if (!changeIt)
         return false;
@@ -1158,14 +1123,14 @@ bool FormWindow::unify(QObject *w, QString &s, bool changeIt)
     // split 'name_number'
     qlonglong num = 0;
     qlonglong factor = 1;
-    int idx = s.size()-1;
-    const ushort zeroUnicode = QLatin1Char('0').unicode();
+    qsizetype idx = s.size() - 1;
+    const char16_t zeroUnicode = u'0';
     for ( ; idx > 0 && s.at(idx).isDigit(); --idx) {
         num += (s.at(idx).unicode() - zeroUnicode) * factor;
         factor *= 10;
     }
     // Position index past '_'.
-    const QChar underscore = QLatin1Char('_');
+    const QChar underscore = u'_';
     if (idx >= 0 && s.at(idx) == underscore) {
         idx++;
     }  else {
@@ -1177,7 +1142,7 @@ bool FormWindow::unify(QObject *w, QString &s, bool changeIt)
     for (num++ ; ;num++) {
         s.truncate(idx);
         s += QString::number(num);
-        if (existingNames.constFind(s) == enEnd)
+        if (!existingNames.contains(s))
             break;
     }
     return false;
@@ -1197,7 +1162,7 @@ void FormWindow::insertWidget(QWidget *w, const QRect &rect, QWidget *container,
     QRect r = rect;
     Q_ASSERT(r.isValid());
     SetPropertyCommand *geom_cmd = new SetPropertyCommand(this);
-    geom_cmd->init(w, QStringLiteral("geometry"), r); // ### use rc.size()
+    geom_cmd->init(w, u"geometry"_s, r); // ### use rc.size()
 
     if (w->parentWidget() != container) {
         ReparentWidgetCommand *cmd = new ReparentWidgetCommand(this);
@@ -1262,7 +1227,7 @@ void FormWindow::resizeWidget(QWidget *widget, const QRect &geometry)
 
     QRect r = geometry;
     SetPropertyCommand *cmd = new SetPropertyCommand(this);
-    cmd->init(widget, QStringLiteral("geometry"), r);
+    cmd->init(widget, u"geometry"_s, r);
     cmd->setText(tr("Resize"));
     m_undoStack.push(cmd);
 }
@@ -1462,10 +1427,12 @@ public:
                        QDesignerPropertySheetExtension *s, int i) :
                        PropertyHelper(o, sp, s, i) {}
 
-    Value setValue(QDesignerFormWindowInterface *fw, const QVariant &value, bool changed, unsigned subPropertyMask) override;
+    Value setValue(QDesignerFormWindowInterface *fw, const QVariant &value, bool changed,
+                   quint64 subPropertyMask) override;
 };
 
-PropertyHelper::Value ArrowKeyPropertyHelper::setValue(QDesignerFormWindowInterface *fw, const QVariant &value, bool changed, unsigned subPropertyMask)
+PropertyHelper::Value ArrowKeyPropertyHelper::setValue(QDesignerFormWindowInterface *fw, const QVariant &value,
+                                                       bool changed, quint64 subPropertyMask)
 {
     // Apply operation to obtain the new geometry value.
     QWidget *w = qobject_cast<QWidget*>(object());
@@ -1485,9 +1452,10 @@ public:
     void init(QWidgetList &l, const ArrowKeyOperation &op);
 
 protected:
-    PropertyHelper *createPropertyHelper(QObject *o, SpecialProperty sp,
-                                         QDesignerPropertySheetExtension *s, int i) const override
-        { return new ArrowKeyPropertyHelper(o, sp, s, i); }
+    std::unique_ptr<PropertyHelper>
+    createPropertyHelper(QObject *o, SpecialProperty sp,
+                         QDesignerPropertySheetExtension *s, int i) const override
+    { return std::make_unique<ArrowKeyPropertyHelper>(o, sp, s, i); }
     QVariant mergeValue(const QVariant &newValue) override;
 };
 
@@ -1504,7 +1472,7 @@ void ArrowKeyPropertyCommand::init(QWidgetList &l, const ArrowKeyOperation &op)
     QObjectList ol;
     for (QWidget *w : std::as_const(l))
         ol.push_back(w);
-    SetPropertyCommand::init(ol, QStringLiteral("geometry"), QVariant::fromValue(op));
+    SetPropertyCommand::init(ol, u"geometry"_s, QVariant::fromValue(op));
 
     setText(op.resize ? FormWindow::tr("Key Resize") : FormWindow::tr("Key Move"));
 }
@@ -1729,15 +1697,14 @@ static inline DomUI *domUIFromClipboard(int *widgetCount, int *actionCount)
 {
     *widgetCount = *actionCount = 0;
     const QString clipboardText = qApp->clipboard()->text();
-    if (clipboardText.isEmpty() || clipboardText.indexOf(QLatin1Char('<')) == -1)
+    if (clipboardText.isEmpty() || clipboardText.indexOf(u'<') == -1)
         return nullptr;
 
     QXmlStreamReader reader(clipboardText);
     DomUI *ui = nullptr;
-    const QString uiElement = QStringLiteral("ui");
     while (!reader.atEnd()) {
         if (reader.readNext() == QXmlStreamReader::StartElement) {
-            if (reader.name().compare(uiElement, Qt::CaseInsensitive) == 0 && !ui) {
+            if (reader.name().compare("ui"_L1, Qt::CaseInsensitive) == 0 && !ui) {
                 ui = new DomUI();
                 ui->read(reader);
                 break;
@@ -1789,9 +1756,8 @@ static void positionPastedWidgetsAtMousePosition(FormWindow *fw, const QPoint &c
         cursorPos = grid.snapPoint(QPoint(0, 0));
     // Determine area of pasted widgets
     QRect pasteArea;
-    const QWidgetList::const_iterator lcend = l.constEnd();
-    for (QWidgetList::const_iterator it = l.constBegin(); it != lcend; ++it)
-        pasteArea =pasteArea.isNull() ? (*it)->geometry() : pasteArea.united((*it)->geometry());
+    for (auto *w : l)
+        pasteArea = pasteArea.isNull() ? w->geometry() : pasteArea.united(w->geometry());
 
     // Mouse on some child? (try to position bottomRight on a free spot to
     // get the stacked-offset effect of Designer 4.3, that is, offset by grid if Ctrl-V is pressed continuously
@@ -1803,8 +1769,8 @@ static void positionPastedWidgetsAtMousePosition(FormWindow *fw, const QPoint &c
     } while (true);
     // Move.
     const QPoint offset = cursorPos - pasteArea.topLeft();
-    for (QWidgetList::const_iterator it = l.constBegin(); it != lcend; ++it)
-        (*it)->move((*it)->pos() + offset);
+    for (auto *w : l)
+        w->move(w->pos() + offset);
 }
 
 void FormWindow::paste(PasteMode pasteMode)
@@ -1982,15 +1948,14 @@ void FormWindow::breakLayout(QWidget *w)
     // Find the first-order managed child widgets
     QWidgetList widgets;
 
-    const QObjectList children = w->children();
-    const QObjectList::const_iterator cend = children.constEnd();
     const QDesignerMetaDataBaseInterface *mdb = core()->metaDataBase();
-    for (QObjectList::const_iterator it =  children.constBegin(); it != cend; ++it)
-        if ( (*it)->isWidgetType())  {
-            QWidget *w = static_cast<QWidget*>(*it);
+    for (auto *o : w->children()) {
+        if (o->isWidgetType())  {
+            auto *w = static_cast<QWidget*>(o);
             if (mdb->item(w))
                 widgets.push_back(w);
         }
+    }
 
     BreakLayoutCommand *cmd = new BreakLayoutCommand(this);
     cmd->init(widgets, w);
@@ -2174,16 +2139,15 @@ void FormWindow::layoutContainer(QWidget *w, int type)
 
     w = core()->widgetFactory()->containerOfWidget(w);
 
-    const QObjectList l = w->children();
     // find managed widget children
     QWidgetList widgets;
-    const QObjectList::const_iterator ocend = l.constEnd();
-    for (QObjectList::const_iterator it = l.constBegin(); it != ocend; ++it)
-        if ( (*it)->isWidgetType() ) {
-            QWidget *widget = static_cast<QWidget*>(*it);
+    for (auto *o : w->children()) {
+        if (o->isWidgetType() ) {
+            auto *widget = static_cast<QWidget*>(o);
             if (widget->isVisibleTo(this) && isManaged(widget))
                 widgets.append(widget);
         }
+    }
 
     if (widgets.isEmpty()) // QTBUG-50563, observed when using hand-edited forms.
         return;
@@ -2253,9 +2217,7 @@ QAction *FormWindow::createSelectAncestorSubMenu(QWidget *w)
     QMenu *menu = new QMenu;
     QActionGroup *ag = new QActionGroup(menu);
     QObject::connect(ag, &QActionGroup::triggered, this, &FormWindow::slotSelectWidget);
-    const int size = parents.size();
-    for (int i = 0; i < size; i++) {
-        QWidget *w = parents.at(i);
+    for (auto *w : std::as_const(parents)) {
         QAction *a = ag->addAction(objectNameOf(w));
         a->setData(QVariant::fromValue(w));
         menu->addAction(a);
@@ -2354,7 +2316,7 @@ QPoint FormWindow::mapToForm(const QWidget *w, const QPoint &pos) const
 bool FormWindow::canBeBuddy(QWidget *w) const // ### rename me.
 {
     if (QDesignerPropertySheetExtension *sheet = qt_extension<QDesignerPropertySheetExtension*>(core()->extensionManager(), w)) {
-        const int index = sheet->indexOf(QStringLiteral("focusPolicy"));
+        const int index = sheet->indexOf(u"focusPolicy"_s);
         if (index != -1) {
             bool ok = false;
             const Qt::FocusPolicy q = static_cast<Qt::FocusPolicy>(Utils::valueOf(sheet->property(index), &ok));
@@ -2414,9 +2376,7 @@ void FormWindow::simplifySelection(QWidgetList *sel) const
     }
     QWidgetList toBeRemoved;
     toBeRemoved.reserve(sel->size());
-    const QWidgetList::const_iterator scend = sel->constEnd();
-    for (QWidgetList::const_iterator it = sel->constBegin(); it != scend; ++it) {
-        QWidget *child = *it;
+    for (auto *child : std::as_const(*sel)) {
         for (QWidget *w = child; true ; ) { // Is any of the parents also selected?
             QWidget *parent = w->parentWidget();
             if (!parent || parent == mainC)
@@ -2430,11 +2390,8 @@ void FormWindow::simplifySelection(QWidgetList *sel) const
     }
     // Now we can actually remove the widgets that were marked
     // for removal in the previous pass.
-    if (!toBeRemoved.isEmpty()) {
-        const QWidgetList::const_iterator rcend = toBeRemoved.constEnd();
-        for (QWidgetList::const_iterator it = toBeRemoved.constBegin(); it != rcend; ++it)
-            sel->removeAll(*it);
-    }
+    for (auto *r : std::as_const(toBeRemoved))
+        sel->removeAll(r);
 }
 
 FormWindow *FormWindow::findFormWindow(QWidget *w)
@@ -2464,8 +2421,8 @@ QWidget *FormWindow::containerAt(const QPoint &pos)
 static QWidget *childAt_SkipDropLine(QWidget *w, QPoint pos)
 {
     const QObjectList &child_list = w->children();
-    for (int i = child_list.size() - 1; i >= 0; --i) {
-        QObject *child_obj = child_list[i];
+    for (auto i = child_list.size() - 1; i >= 0; --i) {
+        QObject *child_obj = child_list.at(i);
         if (qobject_cast<WidgetHandle*>(child_obj) != nullptr)
             continue;
         QWidget *child = qobject_cast<QWidget*>(child_obj);
@@ -2526,7 +2483,7 @@ void FormWindow::highlightWidget(QWidget *widget, const QPoint &pos, HighlightMo
         return;
 
     if (mode == Restore) {
-        const WidgetPaletteMap::iterator pit = m_palettesBeforeHighlight.find(container);
+        const auto pit = m_palettesBeforeHighlight.find(container);
         if (pit != m_palettesBeforeHighlight.end()) {
             container->setPalette(pit.value().first);
             container->setAutoFillBackground(pit.value().second);
@@ -2804,7 +2761,7 @@ bool FormWindow::dropDockWidget(QDesignerDnDItemInterface *item, const QPoint &g
 
     QDesignerPropertySheetExtension *propertySheet = qobject_cast<QDesignerPropertySheetExtension*>(m_core->extensionManager()->extension(widget, Q_TYPEID(QDesignerPropertySheetExtension)));
     if (propertySheet) {
-        const QString dockWidgetAreaName = QStringLiteral("dockWidgetArea");
+        const QString dockWidgetAreaName = u"dockWidgetArea"_s;
         PropertySheetEnumValue e = qvariant_cast<PropertySheetEnumValue>(propertySheet->property(propertySheet->indexOf(dockWidgetAreaName)));
         e.value = area;
         QVariant v;

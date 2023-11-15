@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<db:article xmlns:db="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.2" xml:lang="en">
+<db:article xmlns:db="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:its="http://www.w3.org/2005/11/its" version="5.2" xml:lang="en">
 <db:info>
 <db:title>Exhaustive testing of QDoc commands</db:title>
 <db:productname>OutputFromQDocFiles</db:productname>
@@ -17,21 +17,18 @@
 <db:title>This is a section3</db:title>
 <db:section xml:id="this-is-a-section4">
 <db:title>This is a section4</db:title>
-<db:programlisting language="cpp" role="bad">This is bad code
+<db:programlisting language="cpp" role="bad" its:translate="no">This is bad code
 </db:programlisting>
 <db:para>This text should have a line break riiiiight  noooow.</db:para>
 <db:para><db:emphasis role="bold">All your text belong to bold</db:emphasis> ...And this is an examble of only <db:emphasis role="bold">bold</db:emphasis> being, well, bold.</db:para>
-<db:programlisting language="cpp">    ...
+<db:programlisting language="cpp" its:translate="no">    ...
 </db:programlisting>
-<db:programlisting language="js">// If I knew JavaScript, this is where I would write it.
-</db:programlisting>
-<db:para>And if I knew qmltext, I guess this is where that would go. </db:para>
 <db:title>This a caption</db:title>
 <db:para>Lorem legal ipsum</db:para>
 <db:blockquote><db:para>This is a quotation.</db:para>
 </db:blockquote>
-        &lt;html&gt;&lt;body&gt;This is &lt;b&gt;raw&lt;/b&gt;. Like the &lt;h1&gt;Eddie Murphy&lt;/h1&gt; movie. Just not as funny.&lt;/body&gt;&lt;/html&gt;
-    <db:sidebar><db:para>Look, ma! I made a sidebar!</db:para>
+<db:programlisting role="raw-html"><![CDATA[<html><body>This is <b>raw</b>. Like the <h1>Eddie Murphy</h1> movie. Just not as funny.</body></html>]]></db:programlisting>
+<db:sidebar><db:para>Look, ma! I made a sidebar!</db:para>
 </db:sidebar>
 <db:informaltable style="generic">
 <db:tr valign="top">
@@ -51,11 +48,78 @@
 <db:note>
 <db:para>The code above doesn't compile</db:para>
 </db:note>
+</db:section>
+</db:section>
+</db:section>
+</db:section>
+<db:section xml:id="images">
+<db:title>Images</db:title>
+<db:para>An image without any text:</db:para>
+<db:mediaobject>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+<db:para>An image with just an alternative text:</db:para>
+<db:mediaobject>
+<db:alt>Image alt</db:alt>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+<db:para>An image with alternative text and 1-atom caption:</db:para>
+<db:figure>
+<db:title>Image caption</db:title>
+<db:mediaobject>
+<db:alt>Image alt</db:alt>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+</db:figure>
+<db:para>An image with alternative text and 2-atom caption:</db:para>
+<db:figure>
+<db:title>Image caption with <db:emphasis role="bold">bold</db:emphasis> text</db:title>
+<db:mediaobject>
+<db:alt>Image alt</db:alt>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+</db:figure>
+<db:para>A bordered image:</db:para>
+<db:mediaobject>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+<db:para>A bordered image with a caption:</db:para>
+<db:figure>
+<db:title>Screenshot of the System Tray Icon</db:title>
+<db:mediaobject>
+<db:imageobject>
+<db:imagedata fileref="images/leonardo-da-vinci.png"/>
+</db:imageobject>
+</db:mediaobject>
+</db:figure>
+<db:para>An inline image:</db:para>
+<db:para>The is a paragraph containing an <db:inlinemediaobject>
+<db:imageobject>
+<db:imagedata fileref="images/01.png"/>
+</db:imageobject>
+</db:inlinemediaobject> inline image to test if qdoc handles them properly, without considering rest of the line as alt text for the image.</db:para>
+<db:para>An inline image with alt text:</db:para>
+<db:para>Here is another example of <db:inlinemediaobject>
+<db:alt>No. 1</db:alt>
+<db:imageobject>
+<db:imagedata fileref="images/01.png"/>
+</db:imageobject>
+</db:inlinemediaobject> inline image with alternative text, which should be added as an attribute to the inline image.</db:para>
+</db:section>
+<db:section xml:id="commands-not-yet-tested">
+<db:title>Commands not yet tested</db:title>
 <db:warning>
-<db:para>The following commands have yet to be tested: footnote link sincelist header index topicref // or just don’t care, remove it image inlineimage printline printto printuntil // what’s the difference between printto and printuntil??? quotefile quotefromfile skipline skipto skipuntil span snippet codeline overload sub sup tableofcontents tt uicontrol endmapref endomit underline unicode</db:para>
+<db:para>The following commands have yet to be tested: footnote link sincelist header index topicref // or just don’t care, remove it inlineimage printline printto printuntil // what’s the difference between printto and printuntil??? quotefile quotefromfile skipline skipto skipuntil span snippet codeline overload sub sup tableofcontents tt uicontrol endmapref endomit underline unicode</db:para>
 </db:warning>
-</db:section>
-</db:section>
-</db:section>
 </db:section>
 </db:article>

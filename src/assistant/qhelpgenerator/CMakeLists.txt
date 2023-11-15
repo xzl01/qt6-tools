@@ -1,4 +1,5 @@
-# Generated from qhelpgenerator.pro.
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
 
 #####################################################################
 ## qhelpgenerator Tool:
@@ -7,7 +8,7 @@
 qt_get_tool_target_name(target_name qhelpgenerator)
 qt_internal_add_tool(${target_name}
     TARGET_DESCRIPTION "Qt Compressed Help File Generator"
-    TOOLS_TARGET Tools # special case
+    TOOLS_TARGET Tools
     INSTALL_DIR "${INSTALL_LIBEXECDIR}"
     SOURCES
         ../shared/collectionconfiguration.cpp ../shared/collectionconfiguration.h
@@ -16,19 +17,19 @@ qt_internal_add_tool(${target_name}
         main.cpp
         qhelpdatainterface.cpp qhelpdatainterface_p.h
         qhelpprojectdata.cpp qhelpprojectdata_p.h
-    PUBLIC_LIBRARIES
+    LIBRARIES
         Qt::Gui
         Qt::HelpPrivate
-        Qt::Network
 )
 qt_internal_return_unless_building_tools()
 
+set(needed_plugins
+    QMinimalIntegrationPlugin
+    QSQLiteDriverPlugin
+)
+list(TRANSFORM needed_plugins PREPEND Qt:: OUTPUT_VARIABLE needed_plugin_targets)
+
 if(NOT QT_BUILD_SHARED_LIBS)
-    set(needed_plugins
-        QMinimalIntegrationPlugin
-        QSQLiteDriverPlugin
-    )
-    list(TRANSFORM needed_plugins PREPEND Qt:: OUTPUT_VARIABLE needed_plugin_targets)
     if(QT_SUPERBUILD)
         # In a top-level build, qt_import_plugins() is a no-op because
         # __qt_internal_add_static_plugins_once() is not called.
@@ -58,5 +59,9 @@ ${import_plugin_code}
         qt_import_plugins(${target_name}
             INCLUDE ${needed_plugin_targets}
         )
+    endif()
+else() # QT_BUILD_SHARED_LIBS
+    if(QT_SUPERBUILD)
+        add_dependencies(qhelpgenerator ${needed_plugins})
     endif()
 endif()

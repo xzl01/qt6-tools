@@ -26,6 +26,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 namespace qdesigner_internal {
 
 bool QSimpleResource::m_warningsEnabled = true;
@@ -133,16 +135,16 @@ void QSimpleResource::addCustomWidgetsToWidgetDatabase(const QDesignerFormEditor
                                                        QList<DomCustomWidget *> &custom_widget_list)
 {
     QDesignerWidgetDataBaseInterface *db = core->widgetDataBase();
-    for (int i=0; i < custom_widget_list.size(); ) {
+    for (qsizetype i = 0; i < custom_widget_list.size(); ) {
         bool classInserted = false;
-        DomCustomWidget *custom_widget = custom_widget_list[i];
+        DomCustomWidget *custom_widget = custom_widget_list.at(i);
         const QString customClassName = custom_widget->elementClass();
         const QString base_class = custom_widget->elementExtends();
         QString includeFile;
         IncludeType includeType = IncludeLocal;
         if (const DomHeader *header = custom_widget->elementHeader()) {
             includeFile = header->text();
-            if (header->hasAttributeLocation() && header->attributeLocation() == QStringLiteral("global"))
+            if (header->hasAttributeLocation() && header->attributeLocation() == "global"_L1)
                 includeType = IncludeGlobal;
         }
         const bool domIsContainer = custom_widget->elementContainer();
@@ -203,7 +205,7 @@ void QSimpleResource::handleDomCustomWidgets(const QDesignerFormEditorInterface 
     }
     // Oops, there are classes left whose base class could not be found.
     // Default them to QWidget with warnings.
-    const QString fallBackBaseClass = QStringLiteral("QWidget");
+    const QString fallBackBaseClass = u"QWidget"_s;
     for (DomCustomWidget *custom_widget : std::as_const(custom_widget_list)) {
         const QString customClassName = custom_widget->elementClass();
         const QString base_class = custom_widget->elementExtends();

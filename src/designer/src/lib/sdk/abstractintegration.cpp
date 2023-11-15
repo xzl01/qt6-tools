@@ -281,8 +281,6 @@ public:
     void updateSelection();
     void updateCustomWidgetPlugins();
 
-    void updatePropertyPrivate(const QString &name, const QVariant &value);
-
     void initialize();
     void getSelection(qdesigner_internal::Selection &s);
     QObject *propertyEditorObject();
@@ -298,7 +296,7 @@ public:
 
 QDesignerIntegrationPrivate::QDesignerIntegrationPrivate(QDesignerIntegration *qq) :
     q(qq),
-    headerSuffix(QStringLiteral(".h")),
+    headerSuffix(u".h"_s),
     headerLowercase(true),
     m_features(QDesignerIntegrationInterface::DefaultFeature),
     m_resourceFileWatcherBehaviour(QDesignerIntegrationInterface::PromptToReloadResourceFile),
@@ -320,12 +318,9 @@ void QDesignerIntegrationPrivate::initialize()
         QObject::connect(designerPropertyEditor, &QDesignerPropertyEditor::resetProperty,
                          q, &QDesignerIntegration::resetProperty);
         QObject::connect(designerPropertyEditor, &QDesignerPropertyEditor::addDynamicProperty,
-                q, &QDesignerIntegration::addDynamicProperty);
+                         q, &QDesignerIntegration::addDynamicProperty);
         QObject::connect(designerPropertyEditor, &QDesignerPropertyEditor::removeDynamicProperty,
-                q, &QDesignerIntegration::removeDynamicProperty);
-    } else {
-        QObject::connect(core->propertyEditor(), SIGNAL(propertyChanged(QString,QVariant)),
-                q, SLOT(updatePropertyPrivate(QString,QVariant))); // ### fixme: VS Integration leftover?
+                         q, &QDesignerIntegration::removeDynamicProperty);
     }
 
     QObject::connect(core->formWindowManager(), &QDesignerFormWindowManagerInterface::formWindowAdded,
@@ -354,7 +349,7 @@ void QDesignerIntegrationPrivate::initialize()
         QtGradientUtils::restoreState(m_gradientManager, QString::fromLatin1(f.readAll()));
         f.close();
     } else {
-        QFile defaultGradients(QStringLiteral(":/qt-project.org/designer/defaultgradients.xml"));
+        QFile defaultGradients(u":/qt-project.org/designer/defaultgradients.xml"_s);
         if (defaultGradients.open(QIODevice::ReadOnly)) {
             QtGradientUtils::restoreState(m_gradientManager, QString::fromLatin1(defaultGradients.readAll()));
             defaultGradients.close();
@@ -570,12 +565,12 @@ void QDesignerIntegrationPrivate::updateCustomWidgetPlugins()
 static QString fixHelpClassName(const QString &className)
 {
     // ### generalize using the Widget Data Base
-    if (className == QStringLiteral("Line"))
-        return QStringLiteral("QFrame");
-    if (className == QStringLiteral("Spacer"))
-        return QStringLiteral("QSpacerItem");
-    if (className == QStringLiteral("QLayoutWidget"))
-        return QStringLiteral("QLayout");
+    if (className == "Line"_L1)
+        return u"QFrame"_s;
+    if (className == "Spacer"_L1)
+        return u"QSpacerItem"_s;
+    if (className == "QLayoutWidget"_L1)
+        return u"QLayout"_s;
     return className;
 }
 
@@ -609,7 +604,7 @@ QString QDesignerIntegrationPrivate::contextHelpId() const
     }
     QString helpId = fixHelpClassName(className);
     if (!currentPropertyName.isEmpty()) {
-        helpId += QStringLiteral("::");
+        helpId += "::"_L1;
         helpId += currentPropertyName;
     }
     return helpId;

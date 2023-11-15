@@ -34,8 +34,8 @@ public:
 
     virtual QString domXml() const
     {
-        return QString::fromUtf8("<widget class=\"%1\" name=\"%2\"/>")
-            .arg(name()).arg(name().toLower());
+        return QLatin1StringView("<widget class=\"%1\" name=\"%2\"/>")
+            .arg(name(), name().toLower());
     }
 
     virtual QString codeTemplate() const { return QString(); }

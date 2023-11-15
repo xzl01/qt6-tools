@@ -47,7 +47,9 @@
 
 QT_BEGIN_NAMESPACE
 
-static const char *appFontPrefixC = "AppFonts";
+using namespace Qt::StringLiterals;
+
+static const char appFontPrefixC[] = "AppFonts";
 
 using ActionList = QList<QAction *>;
 
@@ -126,9 +128,8 @@ void QDesignerWorkbench::Position::applyTo(QDockWidget *dockWidget) const
 
 static inline void addActionsToMenu(QMenu *m, const ActionList &al)
 {
-    const ActionList::const_iterator cend = al.constEnd();
-    for (ActionList::const_iterator it = al.constBegin(); it != cend; ++it)
-        m->addAction(*it);
+    for (auto *a : al)
+        m->addAction(a);
 }
 
 static inline QMenu *addMenu(QMenuBar *mb, const QString &title, const ActionList &al)
@@ -218,7 +219,7 @@ QDesignerWorkbench::QDesignerWorkbench()  :
     }
 
     restoreUISettings();
-    AppFontWidget::restore(m_core->settingsManager(), QLatin1String(appFontPrefixC));
+    AppFontWidget::restore(m_core->settingsManager(), QLatin1StringView(appFontPrefixC));
     m_state = StateUp;
 }
 
@@ -233,6 +234,9 @@ QDesignerWorkbench::~QDesignerWorkbench()
         delete widgetBoxToolWindow();
         break;
     }
+    delete m_globalMenuBar;
+    m_windowMenu = nullptr;
+    delete m_dockedMainWindow;
 }
 
 void QDesignerWorkbench::saveGeometriesForModeChange()
@@ -371,7 +375,6 @@ void QDesignerWorkbench::switchToNeutralMode()
     qDesigner->setMainWindow(nullptr);
 
     delete m_dockedMainWindow;
-    m_dockedMainWindow = nullptr;
 }
 
 void QDesignerWorkbench::switchToDockedMode()
@@ -432,7 +435,7 @@ void QDesignerWorkbench::adjustMDIFormPositions()
     const QPoint mdiAreaOffset = m_dockedMainWindow->mdiArea()->pos();
 
     for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
-        const PositionMap::const_iterator pit = m_Positions.constFind(fw);
+        const auto pit = m_Positions.constFind(fw);
         if (pit != m_Positions.constEnd())
             pit->applyTo(mdiSubWindowOf(fw), mdiAreaOffset);
     }
@@ -500,7 +503,7 @@ void QDesignerWorkbench::switchToTopLevelMode()
     for (QDesignerFormWindow *fw : std::as_const(m_formWindows)) {
         fw->setParent(magicalParent(fw), magicalWindowFlags(fw));
         fw->setAttribute(Qt::WA_DeleteOnClose, true);
-        const PositionMap::const_iterator pit = m_Positions.constFind(fw);
+        const auto pit = m_Positions.constFind(fw);
         if (pit != m_Positions.constEnd()) pit->applyTo(fw, desktopOffset);
         // Force an activate in order to refresh minimumSize, otherwise it will not be respected
         if (QLayout *layout = fw->layout())
@@ -589,7 +592,8 @@ void QDesignerWorkbench::removeFormWindow(QDesignerFormWindow *formWindow)
 
     if (QAction *action = formWindow->action()) {
         m_windowActions->removeAction(action);
-        m_windowMenu->removeAction(action);
+        if (m_windowMenu)
+            m_windowMenu->removeAction(action);
     }
 
     if (m_formWindows.isEmpty()) {
@@ -620,7 +624,7 @@ void QDesignerWorkbench::saveSettings() const
     QDesignerSettings settings(m_core);
     settings.clearBackup();
     saveGeometries(settings);
-    AppFontWidget::save(m_core->settingsManager(), QLatin1String(appFontPrefixC));
+    AppFontWidget::save(m_core->settingsManager(), QLatin1StringView(appFontPrefixC));
 }
 
 void QDesignerWorkbench::saveGeometries(QDesignerSettings &settings) const
@@ -791,7 +795,7 @@ bool QDesignerWorkbench::readInBackup()
     if (answer == QMessageBox::No)
         return false;
 
-    const QString modifiedPlaceHolder = QStringLiteral("[*]");
+    const auto modifiedPlaceHolder = "[*]"_L1;
     for (auto it = backupFileMap.cbegin(), end = backupFileMap.cend(); it != end; ++it) {
         QString fileName = it.key();
         fileName.remove(modifiedPlaceHolder);
@@ -881,8 +885,8 @@ QDesignerFormWindow * QDesignerWorkbench::loadForm(const QString &fileName,
             const QString text = QString::fromUtf8(file.readLine());
             file.close();
 
-            const int lf = text.indexOf(QLatin1Char('\n'));
-            if (lf > 0 && text.at(lf-1) == QLatin1Char('\r')) {
+            const auto lf = text.indexOf(u'\n');
+            if (lf > 0 && text.at(lf - 1) == u'\r') {
                 mode = qdesigner_internal::FormWindowBase::CRLFLineTerminator;
             } else if (lf >= 0) {
                 mode = qdesigner_internal::FormWindowBase::LFLineTerminator;

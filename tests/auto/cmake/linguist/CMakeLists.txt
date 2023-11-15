@@ -1,3 +1,6 @@
+# Copyright (C) 2022 The Qt Company Ltd.
+# SPDX-License-Identifier: BSD-3-Clause
+
 # This is an automatic test for the CMake configuration files.
 # To run it manually,
 # 1) mkdir build   # Create a build directory
@@ -57,4 +60,5 @@ include("${_Qt6CTestMacros}")
 _qt_internal_test_expect_pass(test_add_translation_macro)
 if (TARGET Qt6::lupdate)
     _qt_internal_test_expect_pass(test_create_translation_macro)
+    _qt_internal_test_expect_pass(test_create_translation_same_base_names)
 endif()

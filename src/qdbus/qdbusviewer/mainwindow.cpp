@@ -15,8 +15,11 @@
 #include <QtDBus/QDBusConnection>
 #include <QtCore/QSettings>
 
+using namespace Qt::StringLiterals;
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , systemBusViewer(nullptr)
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
     QAction *quitAction = fileMenu->addAction(tr("&Quit"), this, &QWidget::close);
@@ -36,9 +39,13 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(tabWidget);
 
     sessionBusViewer = new QDBusViewer(QDBusConnection::sessionBus());
-    systemBusViewer = new QDBusViewer(QDBusConnection::systemBus());
     tabWidget->addTab(sessionBusViewer, tr("Session Bus"));
-    tabWidget->addTab(systemBusViewer, tr("System Bus"));
+
+    QDBusConnection connection = QDBusConnection::systemBus();
+    if (connection.isConnected()) {
+        systemBusViewer = new QDBusViewer(connection);
+        tabWidget->addTab(systemBusViewer, tr("System Bus"));
+    }
 
     restoreSettings();
 }
@@ -61,18 +68,29 @@ void MainWindow::about()
 {
     QMessageBox box(this);
 
-    box.setText(QString::fromLatin1("<center><img src=\":/qt-project.org/qdbusviewer/images/qdbusviewer-128.png\">"
-                "<h3>%1</h3>"
-                "<p>Version %2</p></center>"
-                "<p>Copyright (C) %3 The Qt Company Ltd.</p>")
-            .arg(tr("D-Bus Viewer"), QLatin1String(QT_VERSION_STR), QStringLiteral("2022")));
+    box.setText(tr("<center><img src=\":/qt-project.org/qdbusviewer/images/qdbusviewer-128.png\">"
+                   "<h3>%1</h3>"
+                   "<p>Version %2</p></center>"
+                   "<p>Copyright (C) %3 The Qt Company Ltd.</p>")
+                        .arg(tr("D-Bus Viewer"), QLatin1String(QT_VERSION_STR), u"2023"_s));
     box.setWindowTitle(tr("D-Bus Viewer"));
     box.exec();
 }
 
-static inline QString windowGeometryKey() { return QStringLiteral("WindowGeometry"); }
-static inline QString sessionTabGroup() { return QStringLiteral("SessionTab"); }
-static inline QString systemTabGroup() { return QStringLiteral("SystemTab"); }
+static inline QString windowGeometryKey()
+{
+    return u"WindowGeometry"_s;
+}
+
+static inline QString sessionTabGroup()
+{
+    return u"SessionTab"_s;
+}
+
+static inline QString systemTabGroup()
+{
+    return u"SystemTab"_s;
+}
 
 void MainWindow::saveSettings()
 {
@@ -84,9 +102,11 @@ void MainWindow::saveSettings()
     sessionBusViewer->saveState(&settings);
     settings.endGroup();
 
-    settings.beginGroup(systemTabGroup());
-    systemBusViewer->saveState(&settings);
-    settings.endGroup();
+    if (systemBusViewer) {
+        settings.beginGroup(systemTabGroup());
+        systemBusViewer->saveState(&settings);
+        settings.endGroup();
+    }
 }
 
 void MainWindow::restoreSettings()
@@ -99,7 +119,9 @@ void MainWindow::restoreSettings()
     sessionBusViewer->restoreState(&settings);
     settings.endGroup();
 
-    settings.beginGroup(systemTabGroup());
-    systemBusViewer->restoreState(&settings);
-    settings.endGroup();
+    if (systemBusViewer) {
+        settings.beginGroup(systemTabGroup());
+        systemBusViewer->restoreState(&settings);
+        settings.endGroup();
+    }
 }

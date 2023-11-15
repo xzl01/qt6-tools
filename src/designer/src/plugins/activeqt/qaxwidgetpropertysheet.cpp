@@ -18,6 +18,8 @@ static const char *geometryPropertyC = "geometry";
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 const char *QAxWidgetPropertySheet::controlPropertyName = "control";
 
 static QString designerPropertyToString(const QVariant &value)
@@ -30,7 +32,7 @@ static QString designerPropertyToString(const QVariant &value)
 QAxWidgetPropertySheet::QAxWidgetPropertySheet(QDesignerAxWidget *object, QObject *parent) :
     QDesignerPropertySheet(object, parent),
     m_controlProperty(controlPropertyName),
-    m_propertyGroup(QStringLiteral("QAxWidget"))
+    m_propertyGroup(u"QAxWidget"_s)
 {
      if (!axWidget()->loaded()) { // For some obscure reason....
         const int controlIndex = QDesignerPropertySheet::indexOf(m_controlProperty);
@@ -48,7 +50,7 @@ bool QAxWidgetPropertySheet::isEnabled(int index) const
 bool QAxWidgetPropertySheet::isVisible(int index) const
 {
     // classContext is ulong, which the property editor does not support
-    return propertyName(index) != QLatin1String("classContext");
+    return propertyName(index) != "classContext"_L1;
 }
 
 bool QAxWidgetPropertySheet::dynamicPropertiesAllowed() const
@@ -65,7 +67,7 @@ QDesignerAxWidget *QAxWidgetPropertySheet::axWidget() const
 bool QAxWidgetPropertySheet::reset(int index)
 {
     const QString name = propertyName(index);
-    QMap<QString, QVariant>::iterator it = m_currentProperties.changedProperties.find(name);
+    const auto it = m_currentProperties.changedProperties.find(name);
     if (it !=  m_currentProperties.changedProperties.end())
         m_currentProperties.changedProperties.erase(it);
     if (name != m_controlProperty)

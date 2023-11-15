@@ -11,6 +11,8 @@
 
 QT_BEGIN_NAMESPACE
 
+using namespace Qt::StringLiterals;
+
 enum { MaxDeviceActions = 20 };
 
 namespace qdesigner_internal {
@@ -25,22 +27,17 @@ PreviewActionGroup::PreviewActionGroup(QDesignerFormEditorInterface *core, QObje
     connect(this, &PreviewActionGroup::triggered, this, &PreviewActionGroup::slotTriggered);
     setExclusive(true);
 
-    const QString objNamePostfix = QStringLiteral("_action");
     // Create invisible actions for devices. Set index as action data.
-    QString objNamePrefix = QStringLiteral("__qt_designer_device_");
     for (int i = 0; i < MaxDeviceActions; i++) {
         QAction *a = new QAction(this);
-        QString objName = objNamePrefix;
-        objName += QString::number(i);
-        objName += objNamePostfix;
-        a->setObjectName(objName);
+        a->setObjectName(QString::asprintf("__qt_designer_device_%d_action", i));
         a->setVisible(false);
         a->setData(i);
         addAction(a);
     }
     // Create separator at index MaxDeviceActions
     QAction *sep = new QAction(this);
-    sep->setObjectName(QStringLiteral("__qt_designer_deviceseparator"));
+    sep->setObjectName(u"__qt_designer_deviceseparator"_s);
     sep->setSeparator(true);
     sep->setVisible(false);
     addAction(sep);
@@ -49,17 +46,12 @@ PreviewActionGroup::PreviewActionGroup(QDesignerFormEditorInterface *core, QObje
 
     // Add style actions
     const QStringList styles = QStyleFactory::keys();
-    const QStringList::const_iterator cend = styles.constEnd();
     // Make sure ObjectName  is unique in case toolbar solution is used.
-    objNamePrefix = QStringLiteral("__qt_designer_style_");
     // Create styles. Set style name string as action data.
-    for (QStringList::const_iterator it = styles.constBegin(); it !=  cend ;++it) {
-        QAction *a = new QAction(tr("%1 Style").arg(*it), this);
-        QString objName = objNamePrefix;
-        objName += *it;
-        objName += objNamePostfix;
-        a->setObjectName(objName);
-        a->setData(*it);
+    for (const auto &s : styles) {
+        QAction *a = new QAction(tr("%1 Style").arg(s), this);
+        a->setObjectName("__qt_designer_style_"_L1 + s + "_action"_L1);
+        a->setData(s);
         addAction(a);
     }
 }

@@ -21,12 +21,14 @@
 #include <QtCore/qtextstream.h>
 #include <QtCore/qregularexpression.h>
 
-static const char *widgetElementC = "widget";
-static const char *nameAttributeC = "name";
-static const char *uiOpeningTagC = "<ui>";
-static const char *uiClosingTagC = "</ui>";
+static const char widgetElementC[] = "widget";
+static const char nameAttributeC[] = "name";
+static const char uiOpeningTagC[] = "<ui>";
+static const char uiClosingTagC[] = "</ui>";
 
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 enum { FilterRole = Qt::UserRole + 11 };
 
@@ -105,10 +107,8 @@ public:
     bool removeCustomWidgets();
 
 private:
-    using WidgetBoxCategoryEntrys = QList<WidgetBoxCategoryEntry>;
-
     QDesignerFormEditorInterface *m_core;
-    WidgetBoxCategoryEntrys m_items;
+    QList<WidgetBoxCategoryEntry> m_items;
     QListView::ViewMode m_viewMode;
 };
 
@@ -138,8 +138,7 @@ void WidgetBoxCategoryModel::setViewMode(QListView::ViewMode vm)
 
 int WidgetBoxCategoryModel::indexOfWidget(const QString &name)
 {
-    const int count = m_items.size();
-    for (int  i = 0; i < count; i++)
+    for (qsizetype i = 0, count = m_items.size(); i < count; ++i)
         if (m_items.at(i).widget.name() == name)
             return i;
     return -1;
@@ -148,9 +147,8 @@ int WidgetBoxCategoryModel::indexOfWidget(const QString &name)
 QDesignerWidgetBoxInterface::Category WidgetBoxCategoryModel::category() const
 {
     QDesignerWidgetBoxInterface::Category rc;
-    const WidgetBoxCategoryEntrys::const_iterator cend = m_items.constEnd();
-    for (WidgetBoxCategoryEntrys::const_iterator it = m_items.constBegin(); it != cend; ++it)
-        rc.addWidget(it->widget);
+    for (const auto &c : m_items)
+        rc.addWidget(c.widget);
     return rc;
 }
 
@@ -159,7 +157,7 @@ bool WidgetBoxCategoryModel::removeCustomWidgets()
     // Typically, we are a whole category of custom widgets, so, remove all
     // and do reset.
     bool changed = false;
-    for (WidgetBoxCategoryEntrys::iterator it = m_items.begin(); it != m_items.end(); )
+    for (auto it = m_items.begin(); it != m_items.end(); )
         if (it->widget.type() == QDesignerWidgetBoxInterface::Widget::Custom) {
             if (!changed)
                 beginResetModel();
@@ -182,7 +180,7 @@ void WidgetBoxCategoryModel::addWidget(const QDesignerWidgetBoxInterface::Widget
 
     // Filter on name + class name if it is different and not a layout.
     QString filter = widget.name();
-    if (!className.isEmpty() && !filter.contains(QStringLiteral("Layout")) && !filter.contains(className))
+    if (!className.isEmpty() && !filter.contains("Layout"_L1) && !filter.contains(className))
         filter += className;
 
     WidgetBoxCategoryEntry item(widget, filter, icon, editable);
@@ -226,10 +224,8 @@ QVariant WidgetBoxCategoryModel::data(const QModelIndex &index, int role) const
             return QVariant(item.toolTip);
         // Icon mode tooltip should contain the  class name
         QString tt =  item.widget.name();
-        if (!item.toolTip.isEmpty()) {
-            tt += QLatin1Char('\n');
-            tt += item.toolTip;
-        }
+        if (!item.toolTip.isEmpty())
+            tt += u'\n' + item.toolTip;
         return QVariant(tt);
 
     }
@@ -254,9 +250,9 @@ bool WidgetBoxCategoryModel::setData(const QModelIndex &index, const QVariant &v
     item.widget.setName(newName);
 
     const QDomDocument doc = stringToDom(WidgetBoxCategoryListView::widgetDomXml(item.widget));
-    QDomElement widget_elt = doc.firstChildElement(QLatin1String(widgetElementC));
+    QDomElement widget_elt = doc.firstChildElement(QLatin1StringView(widgetElementC));
     if (!widget_elt.isNull()) {
-        widget_elt.setAttribute(QLatin1String(nameAttributeC), newName);
+        widget_elt.setAttribute(QLatin1StringView(nameAttributeC), newName);
         item.widget.setDomXml(domToString(widget_elt));
     }
     emit dataChanged(index, index);
@@ -326,7 +322,7 @@ QWidget *WidgetBoxCategoryEntryDelegate::createEditor(QWidget *parent,
 {
     QWidget *result = QItemDelegate::createEditor(parent, option, index);
     if (QLineEdit *line_edit = qobject_cast<QLineEdit*>(result)) {
-        static const QRegularExpression re(QStringLiteral("^[_a-zA-Z][_a-zA-Z0-9]*$"));
+        static const QRegularExpression re(u"^[_a-zA-Z][_a-zA-Z0-9]*$"_s);
         Q_ASSERT(re.isValid());
         line_edit->setValidator(new QRegularExpressionValidator(re, line_edit));
     }
@@ -384,7 +380,7 @@ void WidgetBoxCategoryListView::slotPressed(const QModelIndex &index)
     const QDesignerWidgetBoxInterface::Widget wgt = m_model->widgetAt(m_proxyModel->mapToSource(index));
     if (wgt.isNull())
         return;
-    emit pressed(wgt.name(), widgetDomXml(wgt), QCursor::pos());
+    emit widgetBoxPressed(wgt.name(), widgetDomXml(wgt), QCursor::pos());
 }
 
 void WidgetBoxCategoryListView::removeCurrentItem()
@@ -451,11 +447,11 @@ QString WidgetBoxCategoryListView::widgetDomXml(const QDesignerWidgetBoxInterfac
     QString domXml = widget.domXml();
 
     if (domXml.isEmpty()) {
-        domXml = QLatin1String(uiOpeningTagC);
+        domXml = QLatin1StringView(uiOpeningTagC);
         domXml += QStringLiteral("<widget class=\"");
         domXml += widget.name();
         domXml += QStringLiteral("\"/>");
-        domXml += QLatin1String(uiClosingTagC);
+        domXml += QLatin1StringView(uiClosingTagC);
     }
     return domXml;
 }

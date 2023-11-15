@@ -24,6 +24,7 @@
     \title Versionless QML Module
     \brief QML Types for the Test module without version.
     \since 1.1
+    \modulestate Tech Preview
 */
 
 /*!
@@ -31,6 +32,7 @@
     \instantiates TestQDoc::Test
     \inqmlmodule QDoc.Test
     \brief A QML type documented in a .cpp file.
+    \meta status { <Work In Progress> }
 */
 
 /*!
@@ -38,6 +40,13 @@
     \instantiates TestQDoc::TestDerived
     \inqmlmodule Test.NoVer
     \brief Another QML type documented in a .cpp file.
+*/
+
+/*!
+    \qmltype OldType
+    \inqmlmodule QDoc.Test
+    \brief Deprecated old type.
+    \deprecated [1.0]
 */
 
 /*!
@@ -111,7 +120,7 @@
 /*!
     \qmlmethod Type::deprecatedMethod()
 
-    \deprecated [6.2] This method has no replacement //! No full stop for test.
+    \deprecated [6.2] This method has no replacement.
 
     This is a method that should include information about being deprecated
     and that it has been so since 6.2 in its docs.

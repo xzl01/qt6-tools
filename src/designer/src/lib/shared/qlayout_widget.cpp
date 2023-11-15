@@ -23,6 +23,7 @@
 
 #include <QtCore/qdebug.h>
 #include <QtCore/qalgorithms.h>
+#include <QtCore/qhash.h>
 #include <QtCore/qmap.h>
 #include <QtCore/qstack.h>
 #include <QtCore/qpair.h>
@@ -77,8 +78,8 @@ inline void getGridItemPosition(QFormLayout *formLayout, int index, int *row, in
 
 QT_BEGIN_NAMESPACE
 
-static const char *objectNameC = "objectName";
-static const char *sizeConstraintC = "sizeConstraint";
+static const char objectNameC[] = "objectName";
+static const char sizeConstraintC[] = "sizeConstraint";
 
 /* A padding spacer element that is used to represent an empty form layout cell. It should grow with its cell.
  * Should not be used on a grid as it causes resizing inconsistencies */
@@ -194,8 +195,9 @@ static bool removeEmptyCellsOnGrid(GridLikeLayout *grid, const QRect &area)
     // remove, starting from last
     if (!indexesToBeRemoved.isEmpty()) {
         std::stable_sort(indexesToBeRemoved.begin(), indexesToBeRemoved.end());
-        for (int i = indexesToBeRemoved.size() - 1; i >= 0; i--)
-            delete grid->takeAt(indexesToBeRemoved[i]);
+        std::reverse(indexesToBeRemoved.begin(), indexesToBeRemoved.end());
+        for (auto i : std::as_const(indexesToBeRemoved))
+            delete grid->takeAt(i);
     }
     return true;
 }
@@ -250,15 +252,15 @@ int LayoutProperties::visibleProperties(const  QLayout *layout)
 
 static const char *marginPropertyNamesC[] = {"leftMargin", "topMargin", "rightMargin", "bottomMargin"};
 static const char *spacingPropertyNamesC[] = {"spacing", "horizontalSpacing", "verticalSpacing" };
-static const char *fieldGrowthPolicyPropertyC = "fieldGrowthPolicy";
-static const char *rowWrapPolicyPropertyC = "rowWrapPolicy";
-static const char *labelAlignmentPropertyC = "labelAlignment";
-static const char *formAlignmentPropertyC = "formAlignment";
-static const char *boxStretchPropertyC = "stretch";
-static const char *gridRowStretchPropertyC = "rowStretch";
-static const char *gridColumnStretchPropertyC = "columnStretch";
-static const char *gridRowMinimumHeightPropertyC = "rowMinimumHeight";
-static const char *gridColumnMinimumWidthPropertyC = "columnMinimumWidth";
+static const char fieldGrowthPolicyPropertyC[] = "fieldGrowthPolicy";
+static const char rowWrapPolicyPropertyC[] = "rowWrapPolicy";
+static const char labelAlignmentPropertyC[] = "labelAlignment";
+static const char formAlignmentPropertyC[] = "formAlignment";
+static const char boxStretchPropertyC[] = "stretch";
+static const char gridRowStretchPropertyC[] = "rowStretch";
+static const char gridColumnStretchPropertyC[] = "columnStretch";
+static const char gridRowMinimumHeightPropertyC[] = "rowMinimumHeight";
+static const char gridColumnMinimumWidthPropertyC[] = "columnMinimumWidth";
 
 static bool intValueFromSheet(const QDesignerPropertySheetExtension *sheet, const QString &name, int *value, bool *changed)
 {
@@ -290,7 +292,7 @@ int LayoutProperties::fromPropertySheet(const QDesignerFormEditorInterface *core
     Q_ASSERT(sheet);
     // name
     if (mask & ObjectNameProperty) {
-        const int nameIndex = sheet->indexOf(QLatin1String(objectNameC));
+        const int nameIndex = sheet->indexOf(QLatin1StringView(objectNameC));
         Q_ASSERT(nameIndex != -1);
         m_objectName = sheet->property(nameIndex);
         m_objectNameChanged =  sheet->isChanged(nameIndex);
@@ -300,25 +302,25 @@ int LayoutProperties::fromPropertySheet(const QDesignerFormEditorInterface *core
     const int marginFlags[MarginCount] = { LeftMarginProperty, TopMarginProperty, RightMarginProperty, BottomMarginProperty};
     for (int i = 0; i < MarginCount; i++)
         if (mask & marginFlags[i])
-            if (intValueFromSheet(sheet, QLatin1String(marginPropertyNamesC[i]), m_margins + i, m_marginsChanged + i))
+            if (intValueFromSheet(sheet, QLatin1StringView(marginPropertyNamesC[i]), m_margins + i, m_marginsChanged + i))
                 rc |= marginFlags[i];
 
     const int spacingFlags[] = { SpacingProperty, HorizSpacingProperty, VertSpacingProperty};
     for (int i = 0; i < SpacingsCount; i++)
         if (mask & spacingFlags[i])
-            if (intValueFromSheet(sheet, QLatin1String(spacingPropertyNamesC[i]), m_spacings + i, m_spacingsChanged + i))
+            if (intValueFromSheet(sheet, QLatin1StringView(spacingPropertyNamesC[i]), m_spacings + i, m_spacingsChanged + i))
                 rc |= spacingFlags[i];
     // sizeConstraint, flags
-    variantPropertyFromSheet(mask, SizeConstraintProperty, sheet, QLatin1String(sizeConstraintC), &m_sizeConstraint, &m_sizeConstraintChanged, &rc);
-    variantPropertyFromSheet(mask, FieldGrowthPolicyProperty, sheet, QLatin1String(fieldGrowthPolicyPropertyC), &m_fieldGrowthPolicy, &m_fieldGrowthPolicyChanged, &rc);
-    variantPropertyFromSheet(mask, RowWrapPolicyProperty, sheet, QLatin1String(rowWrapPolicyPropertyC), &m_rowWrapPolicy, &m_rowWrapPolicyChanged, &rc);
-    variantPropertyFromSheet(mask, LabelAlignmentProperty, sheet, QLatin1String(labelAlignmentPropertyC), &m_labelAlignment, &m_labelAlignmentChanged, &rc);
-    variantPropertyFromSheet(mask, FormAlignmentProperty, sheet, QLatin1String(formAlignmentPropertyC), &m_formAlignment, &m_formAlignmentChanged, &rc);
-    variantPropertyFromSheet(mask, BoxStretchProperty, sheet, QLatin1String(boxStretchPropertyC), &m_boxStretch, & m_boxStretchChanged, &rc);
-    variantPropertyFromSheet(mask, GridRowStretchProperty, sheet, QLatin1String(gridRowStretchPropertyC), &m_gridRowStretch, &m_gridRowStretchChanged, &rc);
-    variantPropertyFromSheet(mask, GridColumnStretchProperty, sheet, QLatin1String(gridColumnStretchPropertyC), &m_gridColumnStretch, &m_gridColumnStretchChanged, &rc);
-    variantPropertyFromSheet(mask, GridRowMinimumHeightProperty, sheet, QLatin1String(gridRowMinimumHeightPropertyC), &m_gridRowMinimumHeight, &m_gridRowMinimumHeightChanged, &rc);
-    variantPropertyFromSheet(mask, GridColumnMinimumWidthProperty, sheet, QLatin1String(gridColumnMinimumWidthPropertyC), &m_gridColumnMinimumWidth, &m_gridColumnMinimumWidthChanged, &rc);
+    variantPropertyFromSheet(mask, SizeConstraintProperty, sheet, QLatin1StringView(sizeConstraintC), &m_sizeConstraint, &m_sizeConstraintChanged, &rc);
+    variantPropertyFromSheet(mask, FieldGrowthPolicyProperty, sheet, QLatin1StringView(fieldGrowthPolicyPropertyC), &m_fieldGrowthPolicy, &m_fieldGrowthPolicyChanged, &rc);
+    variantPropertyFromSheet(mask, RowWrapPolicyProperty, sheet, QLatin1StringView(rowWrapPolicyPropertyC), &m_rowWrapPolicy, &m_rowWrapPolicyChanged, &rc);
+    variantPropertyFromSheet(mask, LabelAlignmentProperty, sheet, QLatin1StringView(labelAlignmentPropertyC), &m_labelAlignment, &m_labelAlignmentChanged, &rc);
+    variantPropertyFromSheet(mask, FormAlignmentProperty, sheet, QLatin1StringView(formAlignmentPropertyC), &m_formAlignment, &m_formAlignmentChanged, &rc);
+    variantPropertyFromSheet(mask, BoxStretchProperty, sheet, QLatin1StringView(boxStretchPropertyC), &m_boxStretch, & m_boxStretchChanged, &rc);
+    variantPropertyFromSheet(mask, GridRowStretchProperty, sheet, QLatin1StringView(gridRowStretchPropertyC), &m_gridRowStretch, &m_gridRowStretchChanged, &rc);
+    variantPropertyFromSheet(mask, GridColumnStretchProperty, sheet, QLatin1StringView(gridColumnStretchPropertyC), &m_gridColumnStretch, &m_gridColumnStretchChanged, &rc);
+    variantPropertyFromSheet(mask, GridRowMinimumHeightProperty, sheet, QLatin1StringView(gridRowMinimumHeightPropertyC), &m_gridRowMinimumHeight, &m_gridRowMinimumHeightChanged, &rc);
+    variantPropertyFromSheet(mask, GridColumnMinimumWidthProperty, sheet, QLatin1StringView(gridColumnMinimumWidthPropertyC), &m_gridColumnMinimumWidth, &m_gridColumnMinimumWidthChanged, &rc);
     return rc;
 }
 
@@ -358,7 +360,7 @@ int LayoutProperties::toPropertySheet(const QDesignerFormEditorInterface *core, 
     Q_ASSERT(sheet);
     // name
     if (mask & ObjectNameProperty) {
-        const int nameIndex = sheet->indexOf(QLatin1String(objectNameC));
+        const int nameIndex = sheet->indexOf(QLatin1StringView(objectNameC));
         Q_ASSERT(nameIndex != -1);
         sheet->setProperty(nameIndex, m_objectName);
         if (applyChanged)
@@ -369,25 +371,25 @@ int LayoutProperties::toPropertySheet(const QDesignerFormEditorInterface *core, 
     const int marginFlags[MarginCount] = { LeftMarginProperty, TopMarginProperty, RightMarginProperty, BottomMarginProperty};
     for (int i = 0; i < MarginCount; i++)
         if (mask & marginFlags[i])
-            if (intValueToSheet(sheet, QLatin1String(marginPropertyNamesC[i]), m_margins[i], m_marginsChanged[i], applyChanged))
+            if (intValueToSheet(sheet, QLatin1StringView(marginPropertyNamesC[i]), m_margins[i], m_marginsChanged[i], applyChanged))
                 rc |= marginFlags[i];
 
     const int spacingFlags[] = { SpacingProperty, HorizSpacingProperty, VertSpacingProperty};
     for (int i = 0; i < SpacingsCount; i++)
         if (mask & spacingFlags[i])
-            if (intValueToSheet(sheet, QLatin1String(spacingPropertyNamesC[i]), m_spacings[i], m_spacingsChanged[i], applyChanged))
+            if (intValueToSheet(sheet, QLatin1StringView(spacingPropertyNamesC[i]), m_spacings[i], m_spacingsChanged[i], applyChanged))
                 rc |= spacingFlags[i];
     // sizeConstraint
-    variantPropertyToSheet(mask, SizeConstraintProperty, applyChanged, sheet, QLatin1String(sizeConstraintC), m_sizeConstraint, m_sizeConstraintChanged, &rc);
-    variantPropertyToSheet(mask, FieldGrowthPolicyProperty, applyChanged, sheet, QLatin1String(fieldGrowthPolicyPropertyC), m_fieldGrowthPolicy, m_fieldGrowthPolicyChanged, &rc);
-    variantPropertyToSheet(mask, RowWrapPolicyProperty, applyChanged, sheet, QLatin1String(rowWrapPolicyPropertyC), m_rowWrapPolicy, m_rowWrapPolicyChanged, &rc);
-    variantPropertyToSheet(mask, LabelAlignmentProperty, applyChanged, sheet, QLatin1String(labelAlignmentPropertyC), m_labelAlignment, m_labelAlignmentChanged, &rc);
-    variantPropertyToSheet(mask, FormAlignmentProperty, applyChanged, sheet, QLatin1String(formAlignmentPropertyC), m_formAlignment, m_formAlignmentChanged, &rc);
-    variantPropertyToSheet(mask, BoxStretchProperty, applyChanged, sheet, QLatin1String(boxStretchPropertyC), m_boxStretch, m_boxStretchChanged, &rc);
-    variantPropertyToSheet(mask, GridRowStretchProperty, applyChanged, sheet, QLatin1String(gridRowStretchPropertyC), m_gridRowStretch, m_gridRowStretchChanged, &rc);
-    variantPropertyToSheet(mask, GridColumnStretchProperty, applyChanged, sheet, QLatin1String(gridColumnStretchPropertyC), m_gridColumnStretch, m_gridColumnStretchChanged, &rc);
-    variantPropertyToSheet(mask, GridRowMinimumHeightProperty, applyChanged, sheet, QLatin1String(gridRowMinimumHeightPropertyC), m_gridRowMinimumHeight, m_gridRowMinimumHeightChanged, &rc);
-    variantPropertyToSheet(mask, GridColumnMinimumWidthProperty, applyChanged, sheet, QLatin1String(gridColumnMinimumWidthPropertyC), m_gridColumnMinimumWidth, m_gridColumnMinimumWidthChanged, &rc);
+    variantPropertyToSheet(mask, SizeConstraintProperty, applyChanged, sheet, QLatin1StringView(sizeConstraintC), m_sizeConstraint, m_sizeConstraintChanged, &rc);
+    variantPropertyToSheet(mask, FieldGrowthPolicyProperty, applyChanged, sheet, QLatin1StringView(fieldGrowthPolicyPropertyC), m_fieldGrowthPolicy, m_fieldGrowthPolicyChanged, &rc);
+    variantPropertyToSheet(mask, RowWrapPolicyProperty, applyChanged, sheet, QLatin1StringView(rowWrapPolicyPropertyC), m_rowWrapPolicy, m_rowWrapPolicyChanged, &rc);
+    variantPropertyToSheet(mask, LabelAlignmentProperty, applyChanged, sheet, QLatin1StringView(labelAlignmentPropertyC), m_labelAlignment, m_labelAlignmentChanged, &rc);
+    variantPropertyToSheet(mask, FormAlignmentProperty, applyChanged, sheet, QLatin1StringView(formAlignmentPropertyC), m_formAlignment, m_formAlignmentChanged, &rc);
+    variantPropertyToSheet(mask, BoxStretchProperty, applyChanged, sheet, QLatin1StringView(boxStretchPropertyC), m_boxStretch, m_boxStretchChanged, &rc);
+    variantPropertyToSheet(mask, GridRowStretchProperty, applyChanged, sheet, QLatin1StringView(gridRowStretchPropertyC), m_gridRowStretch, m_gridRowStretchChanged, &rc);
+    variantPropertyToSheet(mask, GridColumnStretchProperty, applyChanged, sheet, QLatin1StringView(gridColumnStretchPropertyC), m_gridColumnStretch, m_gridColumnStretchChanged, &rc);
+    variantPropertyToSheet(mask, GridRowMinimumHeightProperty, applyChanged, sheet, QLatin1StringView(gridRowMinimumHeightPropertyC), m_gridRowMinimumHeight, m_gridRowMinimumHeightChanged, &rc);
+    variantPropertyToSheet(mask, GridColumnMinimumWidthProperty, applyChanged, sheet, QLatin1StringView(gridColumnMinimumWidthPropertyC), m_gridColumnMinimumWidth, m_gridColumnMinimumWidthChanged, &rc);
     return rc;
 }
 
@@ -509,11 +511,10 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
 
     QLayoutItem *BoxLayoutHelper::findItemOfWidget(const LayoutItemVector &lv, QWidget *w)
     {
-        const LayoutItemVector::const_iterator cend = lv.constEnd();
-        for (LayoutItemVector::const_iterator it = lv.constBegin(); it != cend; ++it)
-            if ( (*it)->widget() == w)
-                return *it;
-
+        for (auto *l : lv) {
+            if (l->widget() == w)
+                 return l;
+        }
         return nullptr;
     }
 
@@ -542,12 +543,11 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
         if (savedState == state(boxLayout))
             return;
 
-        const int count = savedState.size();
-        Q_ASSERT(count == currentState.size());
+        Q_ASSERT(savedState.size() == currentState.size());
         // Take items and reassemble in saved order
         const LayoutItemVector items = disassembleLayout(boxLayout);
-        for (int i = 0; i < count; i++) {
-            QLayoutItem *item = findItemOfWidget(items, savedState[i]);
+        for (auto *w : savedState) {
+            QLayoutItem *item = findItemOfWidget(items, w);
             Q_ASSERT(item);
             boxLayout->addItem(item);
         }
@@ -578,18 +578,15 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
             Occupied  // Item bordering on it
         };
         // Horiontal, Vertical pair of state
-        typedef QPair<DimensionCellState, DimensionCellState> CellState;
+        using CellState = QPair<DimensionCellState, DimensionCellState>;
         using CellStates = QList<CellState>;
 
         // Figure out states of a cell and return as a flat vector of
         // [column1, column2,...] (address as  row * columnCount + col)
         static CellStates cellStates(const QList<QRect> &rects, int numRows, int numColumns);
 
-        typedef QMap<QWidget *, QRect> WidgetItemMap;
-        typedef QMap<QWidget *, Qt::Alignment> WidgetAlignmentMap;
-
-        WidgetItemMap widgetItemMap;
-        WidgetAlignmentMap widgetAlignmentMap;
+        QHash<QWidget *, QRect> widgetItemMap;
+        QHash<QWidget *, Qt::Alignment> widgetAlignmentMap;
 
         int rowCount = 0;
         int colCount = 0;
@@ -604,8 +601,8 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
         str << "GridLayoutState: " <<  gs.rowCount << " rows x " <<  gs.colCount
             << " cols " << gs.widgetItemMap.size() << " items\n";
 
-        const GridLayoutState::WidgetItemMap::const_iterator wcend = gs.widgetItemMap.constEnd();
-        for (GridLayoutState::WidgetItemMap::const_iterator it = gs.widgetItemMap.constBegin(); it != wcend; ++it)
+        const auto wcend = gs.widgetItemMap.constEnd();
+        for (auto it = gs.widgetItemMap.constBegin(); it != wcend; ++it)
             str << "Item " << it.key() << it.value() << '\n';
         return str;
     }
@@ -665,19 +662,18 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
 
     void GridLayoutState::applyToLayout(const QDesignerFormEditorInterface *core, QWidget *w) const
     {
-        using LayoutItemRectMap =QHash<QLayoutItem *, QRect>;
         QGridLayout *grid = qobject_cast<QGridLayout *>(LayoutInfo::managedLayout(core, w));
         Q_ASSERT(grid);
         if (debugLayout)
             qDebug() << ">GridLayoutState::applyToLayout" <<  *this << *grid;
         const bool shrink = grid->rowCount() > rowCount || grid->columnCount() > colCount;
         // Build a map of existing items to rectangles via widget map, delete spacers
-        LayoutItemRectMap itemMap;
+        QHash<QLayoutItem *, QRect> itemMap;
         while (grid->count()) {
             QLayoutItem *item = grid->takeAt(0);
             if (!LayoutInfo::isEmptyItem(item)) {
                 QWidget *itemWidget = item->widget();
-                const WidgetItemMap::const_iterator it = widgetItemMap.constFind(itemWidget);
+                const auto it = widgetItemMap.constFind(itemWidget);
                 if (it == widgetItemMap.constEnd())
                     qFatal("GridLayoutState::applyToLayout: Attempt to apply to a layout that has a widget '%s'/'%s' added after saving the state.",
                            itemWidget->metaObject()->className(), itemWidget->objectName().toUtf8().constData());
@@ -692,8 +688,7 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
             grid = static_cast<QGridLayout*>(recreateManagedLayout(core, w, grid));
 
         // Add widgets items
-        const LayoutItemRectMap::const_iterator icend = itemMap.constEnd();
-        for (LayoutItemRectMap::const_iterator it = itemMap.constBegin(); it != icend; ++it) {
+        for (auto it = itemMap.cbegin(), icend = itemMap.cend(); it != icend; ++it) {
             const QRect info = it.value();
             const Qt::Alignment alignment = widgetAlignmentMap.value(it.key()->widget(), {});
             grid->addItem(it.key(), info.y(), info.x(), info.height(), info.width(), alignment);
@@ -984,8 +979,7 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
     // ---------------- FormLayoutHelper
     class FormLayoutHelper : public  LayoutHelper {
     public:
-        typedef QPair<QWidget *, QWidget *> WidgetPair;
-        using FormLayoutState = QList<WidgetPair>;
+        using FormLayoutState = QList<QPair<QWidget *, QWidget *>>;
 
         FormLayoutHelper() = default;
 
@@ -1078,7 +1072,7 @@ QRect LayoutHelper::itemInfo(QLayout *lt, const QWidget *widget) const
         const int rowCount = lt->rowCount();
         if (rowCount == 0)
             return FormLayoutState();
-        FormLayoutState rc(rowCount, WidgetPair(0, 0));
+        FormLayoutState rc(rowCount, {nullptr, nullptr});
         const int count = lt->count();
         int row, column, colspan;
         for (int i = 0; i < count; i++) {

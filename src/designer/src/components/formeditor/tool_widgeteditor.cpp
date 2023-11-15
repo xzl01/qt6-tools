@@ -23,7 +23,7 @@
 
 QT_BEGIN_NAMESPACE
 
-using namespace qdesigner_internal;
+namespace qdesigner_internal {
 
 WidgetEditorTool::WidgetEditorTool(FormWindow *formWindow)
     : QDesignerFormWindowToolInterface(formWindow),
@@ -130,7 +130,7 @@ bool WidgetEditorTool::handleEvent(QWidget *widget, QWidget *managedWidget, QEve
     case QEvent::DragEnter:
         return handleDragEnterMoveEvent(widget, managedWidget, static_cast<QDragEnterEvent *>(event), true);
     case QEvent::DragMove:
-        return handleDragEnterMoveEvent(widget, managedWidget, static_cast<QDragEnterEvent *>(event), false);
+        return handleDragEnterMoveEvent(widget, managedWidget, static_cast<QDragMoveEvent *>(event), false);
     case QEvent::DragLeave:
         return handleDragLeaveEvent(widget, managedWidget, static_cast<QDragLeaveEvent *>(event));
     case QEvent::Drop:
@@ -325,5 +325,7 @@ void WidgetEditorTool::deactivated()
 
     m_formWindow->clearSelection();
 }
+
+} // namespace qdesigner_internal
 
 QT_END_NAMESPACE

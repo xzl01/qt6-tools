@@ -27,9 +27,9 @@
 
 #include <QtCore/qdebug.h>
 
-Q_DECLARE_METATYPE(QAction*)
-
 QT_BEGIN_NAMESPACE
+
+using namespace Qt::StringLiterals;
 
 using ActionList = QList<QAction *>;
 
@@ -148,9 +148,8 @@ bool ToolBarEventFilter::handleContextMenuEvent(QContextMenuEvent * event )
     const ActionList al = contextMenuActions(event->globalPos());
 
     QMenu menu(nullptr);
-    const ActionList::const_iterator acend = al.constEnd();
-    for (ActionList::const_iterator it = al.constBegin(); it != acend; ++it)
-        menu.addAction(*it);
+    for (auto *a : al)
+        menu.addAction(a);
     menu.exec(globalPos);
     return true;
 }
@@ -193,7 +192,7 @@ void ToolBarEventFilter::slotInsertSeparator()
     QAction *theSender = qobject_cast<QAction*>(sender());
     QAction *previous = qvariant_cast<QAction *>(theSender->data());
     fw->beginCommand(tr("Insert Separator"));
-    QAction *action = createAction(fw, QStringLiteral("separator"), true);
+    QAction *action = createAction(fw, u"separator"_s, true);
     InsertActionIntoCommand *cmd = new InsertActionIntoCommand(fw);
     cmd->init(m_toolBar, action, previous);
     fw->commandHistory()->push(cmd);

@@ -12,7 +12,9 @@
 
 QT_BEGIN_NAMESPACE
 
-using namespace qdesigner_internal;
+using namespace Qt::StringLiterals;
+
+namespace qdesigner_internal {
 
 QLayoutWidgetPropertySheet::QLayoutWidgetPropertySheet(QLayoutWidget *object, QObject *parent)
     : QDesignerPropertySheet(object, parent)
@@ -24,8 +26,7 @@ QLayoutWidgetPropertySheet::~QLayoutWidgetPropertySheet() = default;
 
 bool QLayoutWidgetPropertySheet::isVisible(int index) const
 {
-    static const QString layoutPropertyGroup = QStringLiteral("Layout");
-    if (propertyGroup(index) == layoutPropertyGroup)
+    if (propertyGroup(index) == "Layout"_L1)
         return QDesignerPropertySheet::isVisible(index);
     return false;
 }
@@ -39,5 +40,7 @@ bool QLayoutWidgetPropertySheet::dynamicPropertiesAllowed() const
 {
     return false;
 }
+
+} // namespace qdesigner_internal
 
 QT_END_NAMESPACE
