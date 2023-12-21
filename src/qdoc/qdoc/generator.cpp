@@ -285,8 +285,7 @@ QString Generator::fileBase(const Node *node) const
 
         base.prepend(outputPrefix(node));
     } else if (node->isProxyNode()) {
-        base = node->name();
-        base.append("-proxy");
+        base.append("%1-%2-proxy"_L1.arg(node->name(), node->tree()->physicalModuleName()));
     } else {
         const Node *p = node;
         forever {
@@ -1129,7 +1128,10 @@ std::optional<QString> formatStatus(const Node *node, QDocDatabase *qdb)
 
     if (const auto metaMap = node->doc().metaTagMap(); metaMap) {
         status = metaMap->value("status");
-    } else if (node->status() == Node::Deprecated) {
+        if (!status.isEmpty())
+            return {status};
+    }
+    if (node->status() == Node::Deprecated) {
         status = u"Deprecated"_s;
         if (const auto since = node->deprecatedSince(); !since.isEmpty())
             status += " since %1"_L1.arg(since);

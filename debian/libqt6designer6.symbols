@@ -1,6 +1,6 @@
-# SymbolsHelper-Confirmed: 6.6.0 amd64
+# SymbolsHelper-Confirmed: 6.6.1 amd64
 libQt6Designer.so.6 libqt6designer6 #MINVER#
-| libqt6designer6 #MINVER#, qt6-designer-abi (= 6.6.0)
+| libqt6designer6 #MINVER#, qt6-designer-abi (= 6.6.1)
 * Build-Depends-Package: qt6-tools-dev
  Qt_6@Qt_6 6.6.0
  (symver)Qt_6_PRIVATE_API 0
@@ -518,6 +518,7 @@ libQt6Designer.so.6 libqt6designer6 #MINVER#
  _ZN17QFormBuilderExtra10setupBrushEPK8DomBrush@Qt_6 6.6.0
  _ZN17QFormBuilderExtra11loadPaletteEPK10DomPalette@Qt_6 6.6.0
  _ZN17QFormBuilderExtra11savePaletteERK8QPalette@Qt_6 6.6.0
+ _ZN17QFormBuilderExtra14propertyByNameERK5QListIP11DomPropertyE14QAnyStringView@Qt_6 6.6.1
  _ZN17QFormBuilderExtra14saveColorGroupERK8QPaletteNS0_10ColorGroupE@Qt_6 6.6.0
  _ZN17QFormBuilderExtra14setTextBuilderEP12QTextBuilder@Qt_6 6.6.0
  _ZN17QFormBuilderExtra15setParentWidgetERK8QPointerI7QWidgetE@Qt_6 6.6.0
@@ -528,6 +529,7 @@ libQt6Designer.so.6 libqt6designer6 #MINVER#
  _ZN17QFormBuilderExtra16CustomWidgetDataC2Ev@Qt_6 6.6.0
  _ZN17QFormBuilderExtra16boxLayoutStretchEPK10QBoxLayout@Qt_6 6.6.0
  _ZN17QFormBuilderExtra16clearTextBuilderEv@Qt_6 6.6.0
+ _ZN17QFormBuilderExtra16getLayoutMarginsERK5QListIP11DomPropertyEPiS6_S6_S6_@Qt_6 6.6.1
  _ZN17QFormBuilderExtra16msgInvalidUiFileEv@Qt_6 6.6.0
  _ZN17QFormBuilderExtra17setPixmapPropertyEP11DomPropertyRKSt4pairI7QStringS3_E@Qt_6 6.6.0
  _ZN17QFormBuilderExtra18setResourceBuilderEP16QResourceBuilder@Qt_6 6.6.0
@@ -806,8 +808,6 @@ libQt6Designer.so.6 libqt6designer6 #MINVER#
  _ZN18qdesigner_internal13WidgetFactory21createUnmanagedLayoutEP7QWidgeti@Qt_6 6.6.0
  _ZN18qdesigner_internal13WidgetFactory23activeFormWindowChangedEP28QDesignerFormWindowInterface@Qt_6 6.6.0
  _ZN18qdesigner_internal13WidgetFactory35disableStyleCustomPaintingPropertyCE@Qt_6 6.6.0
- _ZN18qdesigner_internal13WidgetFactory7StringsC1Ev@Qt_6 6.6.0
- _ZN18qdesigner_internal13WidgetFactory7StringsC2Ev@Qt_6 6.6.0
  _ZN18qdesigner_internal13WidgetFactory8getStyleERK7QString@Qt_6 6.6.0
  _ZN18qdesigner_internal13WidgetFactoryC1EP28QDesignerFormEditorInterfaceP7QObject@Qt_6 6.6.0
  _ZN18qdesigner_internal13WidgetFactoryC2EP28QDesignerFormEditorInterfaceP7QObject@Qt_6 6.6.0

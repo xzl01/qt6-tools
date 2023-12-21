@@ -4,8 +4,11 @@ usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QAbstractFormBuilder
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerActionEditorInterface
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerComponents
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerContainerExtension
+usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerCustomWidgetCollectionInterface
+usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerCustomWidgetInterface
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerDnDItemInterface
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerDynamicPropertySheetExtension
+usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerExportWidget
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerExtraInfoExtension
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerFormEditorInterface
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/QDesignerFormEditorPluginInterface
@@ -62,6 +65,7 @@ usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/abstractwidgetbox.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/abstractwidgetdatabase.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/abstractwidgetfactory.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/container.h
+usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/customwidget.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/default_extensionfactory.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/dynamicpropertysheet.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/extension.h
@@ -73,6 +77,7 @@ usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/membersheet.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/propertysheet.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/qdesigner_components.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/qdesigner_components_global.h
+usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/qdesignerexportwidget.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/qextensionmanager.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/qtdesignerversion.h
 usr/include/${DEB_HOST_MULTIARCH}/qt6/QtDesigner/sdk_global.h
