@@ -1,3 +1,9 @@
+qt6-tools (6.6.1-1deepin1) experimental; urgency=medium
+
+  * fix: cmake find zstd before clang
+
+ -- hudeng <hudeng@deepin.org>  Mon, 16 Sep 2024 00:25:13 +0800
+
 qt6-tools (6.6.1-1) experimental; urgency=medium
 
   [ Patrick Franz ]

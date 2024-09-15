@@ -1,1 +1,2 @@
 fix-build-with-system-litehtml.patch
+cmake-find-zstd-before-clang.diff
