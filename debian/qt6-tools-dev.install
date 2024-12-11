@@ -204,6 +204,12 @@ usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6HelpTargets-none.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6HelpTargets.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6HelpVersionlessAliasTargets.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6HelpVersionlessTargets.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginAdditionalTargetInfo.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfig.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfigVersion.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfigVersionImpl.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginTargets-*.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginTargets.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Linguist/Qt6LinguistAdditionalTargetInfo.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Linguist/Qt6LinguistConfig.cmake
 usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Linguist/Qt6LinguistConfigVersion.cmake
