@@ -1,0 +1,7 @@
+usr/lib/${DEB_HOST_MULTIARCH}/qt6/plugins/help/libhelpplugin.so
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginAdditionalTargetInfo.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfig.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfigVersion.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginConfigVersionImpl.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginTargets-*.cmake
+usr/lib/${DEB_HOST_MULTIARCH}/cmake/Qt6Help/Qt6QHelpEnginePluginTargets.cmake
